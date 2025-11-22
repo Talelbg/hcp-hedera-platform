@@ -3,22 +3,23 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+import { getAnalytics } from "firebase/analytics";
 
-// 1. Go to console.firebase.google.com
-// 2. Create a new project "HCP-CMP-Platform"
-// 3. Add a "Web App"
-// 4. Copy the config SDK values here:
-
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID
+  apiKey: "AIzaSyD2reN4qvBhUnHdep9LxS8ppG5xruU8ePw",
+  authDomain: "hcp-cmp-platform.firebaseapp.com",
+  databaseURL: "https://hcp-cmp-platform-default-rtdb.firebaseio.com",
+  projectId: "hcp-cmp-platform",
+  storageBucket: "hcp-cmp-platform.firebasestorage.app",
+  messagingSenderId: "505950551698",
+  appId: "1:505950551698:web:cf1dfb5399aa6ae080b04b",
+  measurementId: "G-45NXTTJ5R9"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+export const analytics = getAnalytics(app);
