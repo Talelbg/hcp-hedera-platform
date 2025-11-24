@@ -1,134 +1,426 @@
-import React from 'react';
-import Navbar from '../components/Navbar';
-import { Award, TrendingUp, Users, Clock, CheckCircle, ExternalLink } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useState, useMemo } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { Users, Award, Globe, Clock, AlertTriangle, Activity, Filter, BarChart2, Mail, Flag, Calendar, Check, Sparkles } from 'lucide-react';
+import { StatCard } from '../components/dashboard/StatCard';
+import { DashboardMetrics, DeveloperRecord, calculateDashboardMetrics, generateChartData, generateLeaderboard } from '../services/dataProcessing';
+import { generateExecutiveSummary } from '../services/geminiService';
+import { useAuth } from '../context/AuthContext';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
+
+// Types adapted for internal state
+type TimeframeOption = 'All Time' | 'This Year' | 'Last 90 Days' | 'Last 30 Days' | 'Custom Range';
 
 const Dashboard: React.FC = () => {
-  // Simulated data
-  const stats = [
-    { name: 'Total Certifications', value: '1,234', icon: <Award className="h-6 w-6 text-primary" />, change: '+12%', changeType: 'increase' },
-    { name: 'Active Users', value: '856', icon: <Users className="h-6 w-6 text-secondary" />, change: '+5%', changeType: 'increase' },
-    { name: 'Avg. Completion Time', value: '4.2h', icon: <Clock className="h-6 w-6 text-accent" />, change: '-8%', changeType: 'decrease' }, // decrease is good here
-    { name: 'Pass Rate', value: '92%', icon: <CheckCircle className="h-6 w-6 text-green-500" />, change: '+2%', changeType: 'increase' },
-  ];
+  const { user } = useAuth();
+  const [data, setData] = useState<DeveloperRecord[]>([]);
 
-  const chartData = [
-    { name: 'Jan', certs: 65 },
-    { name: 'Feb', certs: 78 },
-    { name: 'Mar', certs: 90 },
-    { name: 'Apr', certs: 105 },
-    { name: 'May', certs: 125 },
-    { name: 'Jun', certs: 150 },
-  ];
+  // Metrics State
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [aiSummary, setAiSummary] = useState<string>("Waiting for data...");
+  const [loadingAi, setLoadingAi] = useState(false);
 
-  const certifications = [
-    { id: 1, name: 'Hedera Fundamentals', status: 'Completed', date: '2023-10-15', score: '98%' },
-    { id: 2, name: 'Smart Contracts on Hedera', status: 'In Progress', date: '2023-10-28', score: '-' },
-    { id: 3, name: 'Token Service (HTS) Deep Dive', status: 'Not Started', date: '-', score: '-' },
-  ];
+  // Filter State
+  const [activeCommunity, setActiveCommunity] = useState<string>('All');
+  const [activeTimeframe, setActiveTimeframe] = useState<TimeframeOption>('All Time');
+  const [activeStartDate, setActiveStartDate] = useState<string>('');
+  const [activeEndDate, setActiveEndDate] = useState<string>('');
+
+  // Pending State for "Apply" workflow
+  const [pendingCommunity, setPendingCommunity] = useState<string>('All');
+  const [pendingTimeframe, setPendingTimeframe] = useState<TimeframeOption>('All Time');
+  const [pendingStartDate, setPendingStartDate] = useState<string>('');
+  const [pendingEndDate, setPendingEndDate] = useState<string>('');
+
+  const hasUnappliedChanges =
+      pendingCommunity !== activeCommunity ||
+      pendingTimeframe !== activeTimeframe ||
+      (pendingTimeframe === 'Custom Range' && (pendingStartDate !== activeStartDate || pendingEndDate !== activeEndDate));
+
+  // Fetch Data (Simulated or Real)
+  useEffect(() => {
+     const fetchData = async () => {
+         // In a real scenario, we fetch from Firestore
+         // For now, let's seed some dummy data if empty to show the UI
+         const dummyData: DeveloperRecord[] = Array.from({ length: 50 }).map((_, i) => ({
+             id: `user-${i}`,
+             partnerCode: i % 3 === 0 ? 'Hedera' : i % 3 === 1 ? 'Swirlds' : 'The HBAR Foundation',
+             registrationDate: new Date(2023, i % 12, (i * 2) % 28).toISOString(),
+             status: i % 4 === 0 ? 'Certified' : i % 2 === 0 ? 'In Progress' : 'Registered',
+             completionDate: i % 4 === 0 ? new Date(2023, i % 12, (i * 2) % 28 + 2).toISOString() : undefined,
+             score: i % 4 === 0 ? 80 + (i % 20) : undefined
+         }));
+         setData(dummyData);
+     };
+     fetchData();
+  }, []);
+
+  // Date Calculation
+  const calculatedDateRange = useMemo(() => {
+      const now = new Date();
+      let start: Date | null = null;
+      let end: Date | null = null;
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+
+      switch (activeTimeframe) {
+          case 'Last 30 Days':
+              start = new Date(); start.setDate(now.getDate() - 30); start.setHours(0, 0, 0, 0); end = endOfToday; break;
+          case 'Last 90 Days':
+              start = new Date(); start.setDate(now.getDate() - 90); start.setHours(0, 0, 0, 0); end = endOfToday; break;
+          case 'This Year':
+              start = new Date(now.getFullYear(), 0, 1); start.setHours(0, 0, 0, 0); end = endOfToday; break;
+          case 'Custom Range':
+              if (activeStartDate) { start = new Date(activeStartDate); start.setHours(0, 0, 0, 0); }
+              if (activeEndDate) { end = new Date(activeEndDate); end.setHours(23, 59, 59, 999); }
+              break;
+          default: start = null; end = null; break;
+      }
+      return { start, end };
+  }, [activeTimeframe, activeStartDate, activeEndDate]);
+
+  const communities = useMemo(() => {
+    const unique = new Set(data.map(d => d.partnerCode).filter(c => c && c !== 'UNKNOWN'));
+    return ['All', ...Array.from(unique).sort()];
+  }, [data]);
+
+  const communityFilteredData = useMemo(() => {
+    if (activeCommunity === 'All') return data;
+    return data.filter(d => d.partnerCode === activeCommunity);
+  }, [data, activeCommunity]);
+
+  useEffect(() => {
+    const calculated = calculateDashboardMetrics(communityFilteredData, calculatedDateRange.start, calculatedDateRange.end);
+    setMetrics(calculated);
+  }, [communityFilteredData, calculatedDateRange]);
+
+  const chartData = useMemo(() => {
+    return generateChartData(communityFilteredData, calculatedDateRange.start, calculatedDateRange.end);
+  }, [communityFilteredData, calculatedDateRange]);
+
+  const leaderboardData = useMemo(() => {
+      return generateLeaderboard(communityFilteredData);
+  }, [communityFilteredData]);
+
+  // AI Summary Trigger
+  useEffect(() => {
+      if (data.length === 0) {
+          setAiSummary("No data available.");
+      } else if (metrics && aiSummary === "Waiting for data...") {
+          setAiSummary("Click 'AI Insights' to analyze performance.");
+      }
+  }, [data, metrics]);
+
+  const handleApplyFilters = () => {
+      setActiveCommunity(pendingCommunity);
+      setActiveTimeframe(pendingTimeframe);
+      setActiveStartDate(pendingStartDate);
+      setActiveEndDate(pendingEndDate);
+  };
+
+  const handleGenerateSummary = async () => {
+      if (!metrics) return;
+      setLoadingAi(true);
+      let timeContext: string = activeTimeframe;
+      if (activeTimeframe === 'Custom Range') {
+          timeContext = `${activeStartDate || 'Start'} to ${activeEndDate || 'End'}`;
+      }
+      const fullContext = `${activeCommunity} (${timeContext})`;
+      try {
+        const summary = await generateExecutiveSummary(metrics, fullContext);
+        setAiSummary(summary);
+      } catch (e) { setAiSummary("Failed to generate summary."); } finally { setLoadingAi(false); }
+  }
+
+  // Custom Tooltip for Area Chart
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-[#141319]/95 backdrop-blur-md border border-white/10 p-4 rounded-xl shadow-xl text-white z-50">
+          <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">{label}</p>
+          <div className="space-y-1">
+             <div className="flex items-center gap-3 text-sm font-medium">
+                <div className="w-2 h-2 rounded-full bg-[#2a00ff]"></div>
+                <span className="text-slate-300">Registrations:</span>
+                <span className="font-bold">{payload[0].value}</span>
+             </div>
+             <div className="flex items-center gap-3 text-sm font-medium">
+                <div className="w-2 h-2 rounded-full bg-[#a522dd]"></div>
+                <span className="text-slate-300">Certifications:</span>
+                <span className="font-bold">{payload[1].value}</span>
+             </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  if (!metrics) return <div className="min-h-screen flex items-center justify-center bg-[#0e0c15] text-[#2a00ff] font-bold animate-pulse">Initializing Dashboard...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-dark text-slate-900 dark:text-slate-200">
-      <Navbar />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Overview of your Hedera certification progress.</p>
+    <div className="space-y-8 pb-12 p-8 pt-4">
+      {/* Filters & Controls - Glass Panel */}
+      <div className="glass-panel p-6 rounded-2xl bg-[#1c1b22]">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-white/5 pb-6">
+             <div>
+                <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                    {activeCommunity === 'All' ? 'Global Overview' : activeCommunity}
+                    <div className="w-2 h-2 rounded-full bg-[#2a00ff] shadow-[0_0_10px_#2a00ff] animate-pulse"></div>
+                </h1>
+                <p className="text-slate-400 text-sm mt-1 font-medium">
+                    {activeTimeframe === 'All Time'
+                        ? `Viewing all ${communityFilteredData.length.toLocaleString()} records`
+                        : `Timeframe: ${activeTimeframe === 'Custom Range' ? `${activeStartDate} - ${activeEndDate}` : activeTimeframe}`}
+                </p>
+            </div>
+            <button
+                onClick={handleGenerateSummary}
+                disabled={loadingAi || data.length === 0}
+                className="group flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#2a00ff] to-[#791cf5] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#2a00ff]/30 hover:shadow-[#2a00ff]/50 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:shadow-none relative overflow-hidden"
+             >
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                <Sparkles className={`w-4 h-4 relative z-10 ${loadingAi ? 'animate-spin' : ''}`} />
+                <span className="relative z-10">{loadingAi ? 'Analyzing...' : 'AI Insights'}</span>
+             </button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          {stats.map((item) => (
-            <div key={item.name} className="glass-panel rounded-xl p-5 hover:shadow-lg transition-shadow duration-300">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-md p-3">
-                  {item.icon}
+        <div className="flex flex-col xl:flex-row gap-5 items-end xl:items-center">
+             <div className="w-full xl:w-auto">
+                <label className="block text-[10px] font-bold text-[#a522dd] mb-2 uppercase tracking-wider">Community Node</label>
+                <div className="relative">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <select
+                        value={pendingCommunity}
+                        onChange={(e) => setPendingCommunity(e.target.value)}
+                        className="pl-10 pr-10 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm font-medium text-white focus:ring-2 focus:ring-[#2a00ff] focus:border-transparent outline-none appearance-none w-full xl:w-64 cursor-pointer hover:border-slate-500 transition-colors shadow-sm"
+                    >
+                        {communities.map(c => (
+                            <option key={c} value={c}>{c === 'All' ? 'Global (All)' : c}</option>
+                        ))}
+                    </select>
                 </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{item.name}</dt>
-                    <dd>
-                      <div className="text-lg font-medium text-gray-900 dark:text-white">{item.value}</div>
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-              <div className="mt-4">
-                  <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${
-                      item.changeType === 'increase' || (item.name.includes('Time') && item.changeType === 'decrease') // logic for color
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                  }`}>
-                      {item.changeType === 'increase' ? <TrendingUp size={12} className="mr-1" /> : <TrendingUp size={12} className="mr-1 transform rotate-180" />}
-                      {item.change}
-                  </span>
-                  <span className="text-xs text-gray-500 ml-2">from last month</span>
-              </div>
-            </div>
-          ))}
-        </div>
+             </div>
 
-        {/* Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Chart */}
-            <div className="lg:col-span-2 glass-panel rounded-xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">Certification Trends</h3>
+             <div className="w-full xl:w-auto">
+                <label className="block text-[10px] font-bold text-[#a522dd] mb-2 uppercase tracking-wider">Time Epoch</label>
+                <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <select
+                        value={pendingTimeframe}
+                        onChange={(e) => setPendingTimeframe(e.target.value as TimeframeOption)}
+                        className="pl-10 pr-10 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm font-medium text-white focus:ring-2 focus:ring-[#2a00ff] focus:border-transparent outline-none appearance-none w-full xl:w-56 cursor-pointer hover:border-slate-500 transition-colors shadow-sm"
+                    >
+                        <option value="All Time">All Time</option>
+                        <option value="This Year">This Year</option>
+                        <option value="Last 90 Days">Last Quarter</option>
+                        <option value="Last 30 Days">Last 30 Days</option>
+                        <option value="Custom Range">Custom Range</option>
+                    </select>
                 </div>
-                <div className="h-80 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                            <XAxis dataKey="name" stroke="#9ca3af" tick={{fill: '#9ca3af'}} />
-                            <YAxis stroke="#9ca3af" tick={{fill: '#9ca3af'}} />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#1c1b22', border: '1px solid #374151', color: '#f3f4f6' }}
-                                itemStyle={{ color: '#f3f4f6' }}
-                            />
-                            <Line type="monotone" dataKey="certs" stroke="#2a00ff" strokeWidth={3} dot={{ r: 4, fill: '#2a00ff', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
+             </div>
 
-            {/* Recent Certs */}
-             <div className="glass-panel rounded-xl p-6">
-                 <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">Your Certifications</h3>
-                 <div className="flow-root">
-                     <ul className="-my-5 divide-y divide-gray-200 dark:divide-gray-700">
-                         {certifications.map((cert) => (
-                             <li key={cert.id} className="py-4">
-                                 <div className="flex items-center space-x-4">
-                                     <div className="flex-1 min-w-0">
-                                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                             {cert.name}
-                                         </p>
-                                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                             {cert.status} • {cert.date}
-                                         </p>
-                                     </div>
-                                     <div className="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-                                        {cert.score !== '-' ? (
-                                            <span className="text-green-500">{cert.score}</span>
-                                        ) : (
-                                            <span className="text-gray-400 text-xs">--</span>
-                                        )}
-                                     </div>
-                                 </div>
-                             </li>
-                         ))}
-                     </ul>
+             {pendingTimeframe === 'Custom Range' && (
+                 <div className="flex gap-2 w-full xl:w-auto fade-in-up">
+                     <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Start Block</label>
+                        <input
+                            type="date"
+                            value={pendingStartDate}
+                            onChange={(e) => setPendingStartDate(e.target.value)}
+                            className="w-full px-3 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:ring-2 focus:ring-[#2a00ff] outline-none shadow-sm"
+                        />
+                     </div>
+                     <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">End Block</label>
+                        <input
+                            type="date"
+                            value={pendingEndDate}
+                            onChange={(e) => setPendingEndDate(e.target.value)}
+                            className="w-full px-3 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:ring-2 focus:ring-[#2a00ff] outline-none shadow-sm"
+                        />
+                     </div>
                  </div>
-                 <div className="mt-6">
-                    <button className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-dark-panel hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
-                        View All Certifications <ExternalLink size={16} className="ml-2" />
-                    </button>
-                 </div>
+             )}
+
+             <div className="w-full xl:w-auto pb-[1px]">
+                 <button
+                    onClick={handleApplyFilters}
+                    disabled={!hasUnappliedChanges}
+                    className={`w-full xl:w-auto flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${
+                        hasUnappliedChanges
+                        ? 'bg-[#2a00ff] hover:bg-[#791cf5] text-white shadow-[0_0_15px_rgba(42,0,255,0.4)] hover:scale-105'
+                        : 'bg-slate-800 text-slate-500 cursor-default border border-slate-700'
+                    }`}
+                 >
+                    <Check className="w-4 h-4" />
+                    Apply Filter
+                 </button>
              </div>
         </div>
-      </main>
+      </div>
+
+      {/* AI Summary Banner */}
+      <div className="relative overflow-hidden rounded-2xl p-[1px] bg-gradient-to-r from-[#2a00ff] via-[#791cf5] to-[#a522dd] shadow-lg animate-fade-in">
+        <div className="bg-[#141319]/95 backdrop-blur-xl rounded-[15px] p-6 relative z-10">
+            <div className="flex items-start gap-4">
+                <div className="p-3 bg-gradient-to-br from-[#2a00ff]/10 to-[#791cf5]/10 border border-[#2a00ff]/20 text-[#a522dd] rounded-xl shrink-0">
+                    <Activity className="w-6 h-6" />
+                </div>
+                <div>
+                    <h3 className="font-bold text-white text-lg mb-1 flex items-center gap-2">
+                        Executive AI Summary <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400">Gemini 2.5</span>
+                    </h3>
+                    <p className="text-slate-300 leading-relaxed text-sm md:text-base max-w-5xl">
+                        {aiSummary}
+                    </p>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      {/* Metric Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard
+          title="Registered Developers"
+          value={metrics.totalRegistered.toLocaleString()}
+          icon={<Users className="w-5 h-5" />}
+          trendUp={true}
+        />
+        <StatCard
+          title="Total Certified"
+          value={metrics.totalCertified.toLocaleString()}
+          icon={<Award className="w-5 h-5" />}
+          trendUp={true}
+        />
+        <StatCard
+          title="Users Started Course"
+          value={`${metrics.usersStartedCourse.toLocaleString()} (${metrics.usersStartedCoursePct.toFixed(1)}%)`}
+          icon={<BarChart2 className="w-5 h-5" />}
+          trendUp={true}
+        />
+
+        <StatCard
+          title="Avg. Completion Time"
+          value={`${metrics.avgCompletionTimeDays.toFixed(1)} days`}
+          icon={<Clock className="w-5 h-5" />}
+        />
+        <StatCard
+          title="Active Communities"
+          value={metrics.activeCommunities.toString()}
+          icon={<Globe className="w-5 h-5" />}
+        />
+        <StatCard
+          title="Overall Certification Rate"
+          value={`${metrics.certificationRate.toFixed(1)}%`}
+          icon={<Award className="w-5 h-5" />}
+          trendUp={metrics.certificationRate > 40}
+        />
+
+        <StatCard
+          title="Potential Fake Accounts"
+          value={`${metrics.potentialFakeAccounts} (${metrics.potentialFakeAccountsPct.toFixed(1)}%)`}
+          icon={<AlertTriangle className="w-5 h-5" />}
+          alert={metrics.potentialFakeAccounts > 0}
+          tooltip="Includes Speed Runs (<4h). Flagged for review."
+        />
+        <StatCard
+          title="Rapid Completions (<5h)"
+          value={metrics.rapidCompletions.toLocaleString()}
+          icon={<Flag className="w-5 h-5" />}
+        />
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Growth Area Chart */}
+        <div className="glass-card p-6 rounded-2xl bg-[#1c1b22]/50 border border-white/5">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-white flex items-center gap-3 text-lg">
+                <div className="w-1 h-6 bg-[#2a00ff] rounded-full shadow-[0_0_10px_#2a00ff]"></div>
+                Growth Evolution
+            </h3>
+            <div className="flex gap-4 text-xs font-bold">
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-[#2a00ff] rounded-full"></div> <span className="text-slate-300">Registrations</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-[#a522dd] rounded-full"></div> <span className="text-slate-300">Certifications</span>
+                </div>
+            </div>
+          </div>
+
+          <div className="h-72 w-full">
+            {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                    <defs>
+                        <linearGradient id="colorReg" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#2a00ff" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#2a00ff" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorCert" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#a522dd" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#a522dd" stopOpacity={0}/>
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-700" strokeOpacity={0.2} />
+                    <XAxis dataKey="name" stroke="currentColor" className="text-slate-400" fontSize={11} tickLine={false} axisLine={false} minTickGap={30} dy={10} />
+                    <YAxis stroke="currentColor" className="text-slate-400" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area type="monotone" dataKey="registrations" stroke="#2a00ff" strokeWidth={3} fillOpacity={1} fill="url(#colorReg)" />
+                    <Area type="monotone" dataKey="certifications" stroke="#a522dd" strokeWidth={3} fillOpacity={1} fill="url(#colorCert)" />
+                </AreaChart>
+                </ResponsiveContainer>
+            ) : (
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm border border-dashed border-slate-700 rounded-xl">
+                    No data recorded for this period.
+                </div>
+            )}
+          </div>
+        </div>
+
+        {/* Leaderboard Bar Chart */}
+        <div className="glass-card p-6 rounded-2xl bg-[#1c1b22]/50 border border-white/5">
+            <h3 className="font-bold text-white mb-6 flex items-center gap-3 text-lg">
+                <div className="w-1 h-6 bg-[#791cf5] rounded-full shadow-[0_0_10px_#791cf5]"></div>
+                {activeCommunity === 'All' ? 'Top Communities' : 'Contribution'}
+            </h3>
+            <div className="h-72 w-full">
+                {leaderboardData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={leaderboardData} layout="vertical" margin={{ left: 40 }}>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="currentColor" className="text-slate-700" strokeOpacity={0.2}/>
+                            <XAxis type="number" hide />
+                            <YAxis dataKey="name" type="category" width={100} stroke="currentColor" className="text-slate-400" fontSize={11} tickLine={false} axisLine={false} />
+                            <Tooltip
+                                cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                                contentStyle={{ backgroundColor: '#141319', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                            />
+                            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16} name="Certified Users">
+                                {leaderboardData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={`url(#barGradient-${index})`} />
+                                ))}
+                            </Bar>
+                            <defs>
+                                {leaderboardData.map((entry, index) => (
+                                    <linearGradient key={`grad-${index}`} id={`barGradient-${index}`} x1="0" y1="0" x2="1" y2="0">
+                                        <stop offset="0%" stopColor="#2a00ff" />
+                                        <stop offset="100%" stopColor="#a522dd" />
+                                    </linearGradient>
+                                ))}
+                            </defs>
+                        </BarChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="h-full flex items-center justify-center text-slate-400 text-sm border border-dashed border-slate-700 rounded-xl">
+                        No leaderboard data.
+                    </div>
+                )}
+            </div>
+        </div>
+      </div>
     </div>
   );
 };

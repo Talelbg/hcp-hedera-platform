@@ -4,11 +4,12 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { Sidebar } from './components/Sidebar';
 
 // Simple loading component
 const Loading = () => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-dark">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+  <div className="min-h-screen flex items-center justify-center bg-[#0e0c15]">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#2a00ff]"></div>
   </div>
 );
 
@@ -22,7 +23,17 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  // Wrap the protected content with the Sidebar layout
+  return (
+    <div className="flex min-h-screen bg-[#0e0c15]">
+      <Sidebar />
+      <div className="flex-1 lg:ml-72 min-h-screen relative z-0 overflow-y-auto">
+        {/* Background gradient for the main content area */}
+         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1c1b22] via-[#0e0c15] to-[#0e0c15] pointer-events-none -z-10"></div>
+        {children}
+      </div>
+    </div>
+  );
 };
 
 const AppRoutes = () => {
@@ -45,7 +56,11 @@ const AppRoutes = () => {
                 </ProtectedRoute>
             }
             />
+            {/* Redirect root to dashboard */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+            {/* Catch all other routes and redirect to dashboard for now */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
     );
 };
