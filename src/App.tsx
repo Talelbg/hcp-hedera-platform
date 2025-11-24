@@ -4,10 +4,11 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import Layout from './components/Layout';
 
 // Simple loading component
 const Loading = () => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-dark">
+  <div className="min-h-screen flex items-center justify-center bg-[#06060C]">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
   </div>
 );
@@ -22,7 +23,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  return <Layout>{children}</Layout>;
 };
 
 const AppRoutes = () => {
@@ -45,6 +46,14 @@ const AppRoutes = () => {
                 </ProtectedRoute>
             }
             />
+            {/* Placeholder routes for other sidebar items to prevent 404s if clicked */}
+            <Route path="/membership" element={<ProtectedRoute><div className="text-white">Membership Page Coming Soon</div></ProtectedRoute>} />
+            <Route path="/developers" element={<ProtectedRoute><div className="text-white">Developers Page Coming Soon</div></ProtectedRoute>} />
+            <Route path="/outreach" element={<ProtectedRoute><div className="text-white">Smart Outreach Page Coming Soon</div></ProtectedRoute>} />
+            <Route path="/finance" element={<ProtectedRoute><div className="text-white">Finance Page Coming Soon</div></ProtectedRoute>} />
+            <Route path="/reporting" element={<ProtectedRoute><div className="text-white">Reporting Page Coming Soon</div></ProtectedRoute>} />
+            <Route path="/events" element={<ProtectedRoute><div className="text-white">Event Management Page Coming Soon</div></ProtectedRoute>} />
+
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
     );
