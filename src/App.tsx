@@ -14,12 +14,7 @@ const Loading = () => (
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // We need to handle auth state here.
-  // Since we haven't installed react-firebase-hooks yet, I will implement a basic observer or just rely on the user adding it.
-  // Wait, I should probably add react-firebase-hooks to be clean or write a hook.
-  // For now, let's write a simple hook in this file or just use standard firebase onAuthStateChanged.
-
-  const [user, loading] = useAuth();
+  const [user, loading] = useAuthState(auth);
 
   if (loading) return <Loading />;
 
@@ -29,26 +24,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   return <>{children}</>;
 };
-
-// Custom Auth Hook
-import { useState, useEffect } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-
-function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  return [user, loading] as const;
-}
 
 const App: React.FC = () => {
   return (
