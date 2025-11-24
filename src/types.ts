@@ -167,8 +167,8 @@ export interface DashboardMetrics {
   totalCertified: number;
   usersStartedCourse: number;
   usersStartedCoursePct: number;
-  activeCommunities: number;
   avgCompletionTimeDays: number;
+  activeCommunities: number;
   certificationRate: number;
   overallSubscriberRate: number;
   potentialFakeAccounts: number;
