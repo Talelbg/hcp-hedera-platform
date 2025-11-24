@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
-import { Hexagon } from 'lucide-react';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -40,29 +39,29 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-dark relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#06060C] relative overflow-hidden">
         {/* Background Decorative Elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
             <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[100px] animate-float"></div>
             <div className="absolute bottom-[10%] right-[10%] w-[30%] h-[30%] rounded-full bg-accent/10 blur-[80px] animate-float" style={{animationDelay: '2s'}}></div>
         </div>
 
-      <div className="max-w-md w-full space-y-8 p-8 glass-card rounded-2xl relative z-10 fade-in-up">
+      <div className="max-w-md w-full space-y-8 p-8 bg-[#12121A] border border-[#1F1F2C] rounded-2xl relative z-10 shadow-2xl">
         <div className="text-center">
-            <div className="mx-auto h-16 w-16 bg-gradient-to-tr from-primary to-accent rounded-xl flex items-center justify-center text-white shadow-lg mb-4">
-                <Hexagon size={32} />
+            <div className="mx-auto w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center mb-6 shadow-lg shadow-blue-900/50">
+                <span className="text-white font-bold text-3xl">D</span>
             </div>
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+          <h2 className="text-3xl font-bold text-white tracking-tight">
             Welcome Back
           </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Sign in to access your Hedera certifications
+          <p className="mt-2 text-sm text-gray-400">
+            Sign in to access your Dar Blockchain dashboard
           </p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleEmailLogin}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div className="mb-4">
+          <div className="space-y-4">
+            <div>
               <label htmlFor="email-address" className="sr-only">Email address</label>
               <input
                 id="email-address"
@@ -72,7 +71,7 @@ const Login: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-700 placeholder-gray-500 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm bg-white dark:bg-dark-panel"
+                className="appearance-none relative block w-full px-4 py-3 border border-[#2A2A35] placeholder-gray-500 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-[#0B0B15] transition-colors"
                 placeholder="Email address"
               />
             </div>
@@ -86,14 +85,14 @@ const Login: React.FC = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-700 placeholder-gray-500 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm bg-white dark:bg-dark-panel"
+                className="appearance-none relative block w-full px-4 py-3 border border-[#2A2A35] placeholder-gray-500 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-[#0B0B15] transition-colors"
                 placeholder="Password"
               />
             </div>
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm text-center bg-red-100 dark:bg-red-900/20 p-2 rounded-lg border border-red-200 dark:border-red-800">
+            <div className="text-red-400 text-sm text-center bg-red-900/20 p-3 rounded-lg border border-red-900/50">
                 {error}
             </div>
           )}
@@ -102,7 +101,7 @@ const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/30"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-primary hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/30"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -112,10 +111,10 @@ const Login: React.FC = () => {
         <div className="mt-6">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
+              <div className="w-full border-t border-[#2A2A35]"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-slate-50 dark:bg-dark-panel text-gray-500 rounded">Or continue with</span>
+              <span className="px-2 bg-[#12121A] text-gray-500">Or continue with</span>
             </div>
           </div>
 
@@ -123,7 +122,7 @@ const Login: React.FC = () => {
             <button
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-dark-panel text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+              className="w-full flex justify-center py-3 px-4 border border-[#2A2A35] rounded-lg shadow-sm bg-[#0B0B15] text-sm font-medium text-gray-300 hover:bg-[#1E1E2D] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
             >
                <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
                   <path
