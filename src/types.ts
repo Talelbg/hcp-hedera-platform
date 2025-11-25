@@ -23,6 +23,25 @@ export interface CommunityMasterRecord {
     managerEmail?: string;
 }
 
+// Flexible Community/Partner record for CSV imports
+export interface Community {
+    id: string;
+    displayName: string; // Original community name from CSV (normalized)
+    slug: string; // Normalized key for deduplication (lowercase, trimmed, no special chars)
+    metadata?: Record<string, string>; // Extra CSV columns stored as key-value pairs
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Result of a community CSV import operation
+export interface CommunityImportResult {
+    totalRows: number;
+    validEntries: number;
+    skippedRows: number;
+    errors: { row: number; reason: string }[];
+    imported: Omit<Community, 'id'>[];
+}
+
 // 2.1 The Master Data Schema
 export interface DeveloperRecord {
   id: string;

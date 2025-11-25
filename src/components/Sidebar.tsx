@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, ShieldAlert, Upload, List } from 'lucide-react';
+import { LayoutDashboard, Users, ShieldAlert, Upload, List, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Sidebar: React.FC = () => {
@@ -12,6 +12,7 @@ export const Sidebar: React.FC = () => {
     { id: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: '/subscriptions', label: 'Subscriptions', icon: List },
     { id: '/import', label: 'Import Data', icon: Upload },
+    { id: '/import-community', label: 'Import Community', icon: UserPlus },
     { id: '/admin', label: 'Admin & Leaders', icon: ShieldAlert, allowedRoles: ['super_admin'] },
   ];
 

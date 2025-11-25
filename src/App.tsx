@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Subscriptions from './pages/Subscriptions';
 import ImportData from './pages/ImportData';
+import ImportCommunity from './pages/ImportCommunity';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar } from './components/Sidebar';
 
@@ -63,6 +64,14 @@ const AppRoutes = () => {
             element={
                 <ProtectedRoute>
                 <ImportData />
+                </ProtectedRoute>
+            }
+            />
+            <Route
+            path="/import-community"
+            element={
+                <ProtectedRoute>
+                <ImportCommunity />
                 </ProtectedRoute>
             }
             />
