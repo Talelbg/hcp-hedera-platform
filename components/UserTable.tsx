@@ -74,29 +74,32 @@ export const UserTable: React.FC<UserTableProps> = ({ data, initialFilters, onBa
     <div className="space-y-6 fade-in-up">
       {onBack && (
           <button onClick={onBack} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#2a00ff] font-medium transition-colors group mb-2">
-              <div className="p-1 rounded-full group-hover:bg-slate-200 dark:group-hover:bg-white/10"><ArrowLeft className="w-4 h-4" /></div> Back to Dashboard
+              <div className="p-1 rounded-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 group-hover:border-[#2a00ff]"><ArrowLeft className="w-4 h-4" /></div> Back to Dashboard
           </button>
       )}
 
-      <div className="glass-panel p-5 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
-          <div className="relative w-full xl:w-96">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className="glass-panel p-6 rounded-3xl flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center shadow-lg relative overflow-hidden">
+          {/* Background Gradient */}
+          <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-l from-[#2a00ff]/5 to-transparent pointer-events-none"></div>
+
+          <div className="relative w-full xl:w-96 z-10">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input 
                   type="text" 
                   placeholder="Search developers..." 
                   value={searchQuery} 
                   onChange={(e) => setSearchQuery(e.target.value)} 
-                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-[#2a00ff] outline-none text-slate-900 dark:text-white placeholder:text-slate-400 shadow-sm" 
+                  className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#1c1b22] border border-slate-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-[#2a00ff] outline-none text-slate-900 dark:text-white placeholder:text-slate-500 shadow-sm transition-all" 
               />
           </div>
 
-          <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto">
+          <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto z-10">
               <div className="relative flex-1 md:w-48">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <select 
                       value={communityFilter} 
                       onChange={(e) => setCommunityFilter(e.target.value)} 
-                      className="w-full pl-10 pr-8 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] outline-none appearance-none cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+                      className="w-full pl-10 pr-8 py-3 bg-white dark:bg-[#1c1b22] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] outline-none appearance-none cursor-pointer hover:bg-slate-50 dark:hover:bg-[#141319] shadow-sm transition-all"
                   >
                       <option value="All">All Communities</option>
                       {communities.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
@@ -107,7 +110,7 @@ export const UserTable: React.FC<UserTableProps> = ({ data, initialFilters, onBa
                   <select 
                       value={statusFilter} 
                       onChange={(e) => setStatusFilter(e.target.value as DetailedStatus)} 
-                      className="w-full pl-10 pr-8 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] outline-none appearance-none cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+                      className="w-full pl-10 pr-8 py-3 bg-white dark:bg-[#1c1b22] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] outline-none appearance-none cursor-pointer hover:bg-slate-50 dark:hover:bg-[#141319] shadow-sm transition-all"
                   >
                       <option value="All">All Statuses</option>
                       <option value="Not Started">Not Started (0%)</option>
@@ -120,83 +123,97 @@ export const UserTable: React.FC<UserTableProps> = ({ data, initialFilters, onBa
               </div>
               <div className="flex items-center gap-2">
                   {(statusFilter !== 'All' || communityFilter !== 'All' || searchQuery) && (
-                      <button onClick={clearFilters} className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors" title="Clear"><X className="w-4 h-4" /></button>
+                      <button onClick={clearFilters} className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 transition-colors" title="Clear"><X className="w-4 h-4" /></button>
                   )}
-                  <button onClick={handleExport} disabled={filteredData.length === 0} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#a522dd] text-white rounded-xl hover:bg-[#791cf5] transition-all text-sm font-bold shadow-lg shadow-[#a522dd]/20 disabled:opacity-50 disabled:shadow-none">
+                  <button onClick={handleExport} disabled={filteredData.length === 0} className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#791cf5] to-[#a522dd] text-white rounded-xl hover:shadow-[0_0_15px_#791cf5] hover:-translate-y-0.5 transition-all text-sm font-bold shadow-lg shadow-[#791cf5]/20 disabled:opacity-50 disabled:shadow-none">
                       <Download className="w-4 h-4" /> Export
                   </button>
               </div>
           </div>
       </div>
 
-      <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="glass-card rounded-3xl overflow-hidden border border-slate-200 dark:border-white/5 bg-white/50 dark:bg-[#1c1b22]/40 backdrop-blur-sm shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 dark:bg-[#141319]/50 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-white/5">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead className="bg-slate-50 dark:bg-[#141319]/80 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-white/5 uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="px-6 py-4">Developer</th>
-                <th className="px-6 py-4">Community</th>
-                <th className="px-6 py-4">Progress</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Duration</th>
-                <th className="px-6 py-4">Risk Assessment</th>
+                <th className="px-8 py-5">Developer</th>
+                <th className="px-8 py-5">Community</th>
+                <th className="px-8 py-5">Progress</th>
+                <th className="px-8 py-5">Status</th>
+                <th className="px-8 py-5">Duration</th>
+                <th className="px-8 py-5">Risk Assessment</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
               {paginatedData.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
-                  <td className="px-6 py-4">
+                <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-[#2a00ff]/5 transition-colors group">
+                  <td className="px-8 py-5">
                     <div className="font-bold text-slate-900 dark:text-white group-hover:text-[#2a00ff] transition-colors">{user.firstName} {user.lastName}</div>
                     <div className="text-xs text-slate-500 dark:text-slate-500 font-mono">{user.email}</div>
                   </td>
-                  <td className="px-6 py-4"><span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-600 dark:text-slate-300 text-xs font-bold">{user.partnerCode}</span></td>
-                  <td className="px-6 py-4">
+                  <td className="px-8 py-5"><span className="px-3 py-1 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-full text-slate-600 dark:text-slate-300 text-xs font-bold">{user.partnerCode}</span></td>
+                  <td className="px-8 py-5">
                     <div className="flex items-center gap-3">
-                        <div className="w-20 bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                            <div className={`h-full rounded-full shadow-[0_0_10px_currentColor] ${user.finalGrade === 'Pass' ? 'bg-[#a522dd] text-[#a522dd]' : 'bg-[#2a00ff] text-[#2a00ff]'}`} style={{ width: `${user.percentageCompleted}%` }}></div>
+                        <div className="w-24 bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                            <div className={`h-full rounded-full shadow-[0_0_8px_currentColor] transition-all duration-1000 ${user.finalGrade === 'Pass' ? 'bg-[#a522dd] text-[#a522dd]' : 'bg-[#2a00ff] text-[#2a00ff]'}`} style={{ width: `${user.percentageCompleted}%` }}></div>
                         </div>
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{user.percentageCompleted}%</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-8 py-5">
                     {user.finalGrade === 'Pass' ? (
-                      <span className="inline-flex items-center gap-1.5 text-[#a522dd] bg-[#a522dd]/10 px-2.5 py-1 rounded-full text-xs font-bold border border-[#a522dd]/20"><CheckCircle className="w-3 h-3" /> Certified</span>
+                      <span className="inline-flex items-center gap-1.5 text-[#a522dd] bg-[#a522dd]/10 px-3 py-1 rounded-full text-xs font-bold border border-[#a522dd]/20 shadow-[0_0_10px_rgba(165,34,221,0.2)]"><CheckCircle className="w-3 h-3" /> Certified</span>
                     ) : user.percentageCompleted === 0 ? (
-                        <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full text-xs font-bold border border-slate-200 dark:border-slate-700"><PlayCircle className="w-3 h-3" /> Not Started</span>
+                        <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-3 py-1 rounded-full text-xs font-bold border border-slate-200 dark:border-white/10"><PlayCircle className="w-3 h-3" /> Not Started</span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 text-[#2a00ff] bg-[#2a00ff]/10 px-2.5 py-1 rounded-full text-xs font-bold border border-[#2a00ff]/20"><Clock className="w-3 h-3" /> In Progress</span>
+                      <span className="inline-flex items-center gap-1.5 text-[#2a00ff] bg-[#2a00ff]/10 px-3 py-1 rounded-full text-xs font-bold border border-[#2a00ff]/20"><Clock className="w-3 h-3" /> In Progress</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs">{user.durationHours ? `${user.durationHours.toFixed(1)}h` : '-'}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-8 py-5 text-slate-500 dark:text-slate-400 font-mono text-xs">{user.durationHours ? `${user.durationHours.toFixed(1)}h` : '-'}</td>
+                  <td className="px-8 py-5">
                     {user.isSuspicious ? (
                         <div className="flex flex-wrap gap-1">
                             {user.suspicionReason?.split(',').map((reason, i) => (
-                                <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-500/10 text-red-600 dark:text-red-400 rounded text-[10px] font-bold border border-red-500/20 whitespace-nowrap">
+                                <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-red-500/10 text-red-600 dark:text-red-400 rounded-full text-[10px] font-bold border border-red-500/20 whitespace-nowrap shadow-sm">
                                     <AlertTriangle className="w-3 h-3" /> {reason.trim()}
                                 </span>
                             ))}
                         </div>
                     ) : user.dataError ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded text-[10px] font-bold border border-orange-500/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-full text-[10px] font-bold border border-orange-500/20">
                             <Bug className="w-3 h-3" /> Data Error
                         </span>
                     ) : (
-                        <span className="text-slate-400">-</span>
+                        <span className="text-slate-400 opacity-20">-</span>
                     )}
                   </td>
                 </tr>
               ))}
-              {paginatedData.length === 0 && <tr><td colSpan={6} className="p-12 text-center text-slate-500">No records found.</td></tr>}
+              {paginatedData.length === 0 && <tr><td colSpan={6} className="p-16 text-center text-slate-500">No records match your filters.</td></tr>}
             </tbody>
           </table>
         </div>
         
         {filteredData.length > 0 && (
-            <div className="px-6 py-4 border-t border-slate-200 dark:border-white/5 flex items-center justify-between bg-slate-50 dark:bg-[#141319]/50">
-                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-[#2a00ff] disabled:opacity-30 transition-colors"><ChevronLeft className="w-4 h-4" /> Prev</button>
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-500">Page {currentPage} of {totalPages}</span>
-                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-[#2a00ff] disabled:opacity-30 transition-colors">Next <ChevronRight className="w-4 h-4" /></button>
+            <div className="px-8 py-4 border-t border-slate-200 dark:border-white/5 flex items-center justify-between bg-slate-50 dark:bg-[#141319]/50">
+                <button 
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                    disabled={currentPage === 1} 
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-[#2a00ff] hover:bg-white dark:hover:bg-white/5 rounded-lg disabled:opacity-30 transition-all shadow-sm disabled:shadow-none"
+                >
+                    <ChevronLeft className="w-4 h-4" /> Prev
+                </button>
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-500 bg-white dark:bg-white/5 px-4 py-1.5 rounded-full border border-slate-200 dark:border-white/5">
+                    Page <span className="text-[#2a00ff]">{currentPage}</span> of {totalPages}
+                </span>
+                <button 
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                    disabled={currentPage === totalPages} 
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-[#2a00ff] hover:bg-white dark:hover:bg-white/5 rounded-lg disabled:opacity-30 transition-all shadow-sm disabled:shadow-none"
+                >
+                    Next <ChevronRight className="w-4 h-4" />
+                </button>
             </div>
         )}
       </div>

@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
-import { Users, Award, Globe, Clock, AlertTriangle, Activity, Filter, BarChart2, Mail, Flag, Calendar, Check, Sparkles } from 'lucide-react';
+import { Users, Award, Globe, Clock, AlertTriangle, Activity, Filter, BarChart2, Mail, Flag, Calendar, Check, Sparkles, ChevronDown } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { DashboardMetrics, DeveloperRecord, TimeframeOption } from '../types';
 import { calculateDashboardMetrics, generateChartData, generateLeaderboard } from '../services/dataProcessing';
@@ -23,7 +24,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
   const [activeStartDate, setActiveStartDate] = useState<string>('');
   const [activeEndDate, setActiveEndDate] = useState<string>('');
 
-  // Pending State for "Apply" workflow
+  // Pending State
   const [pendingCommunity, setPendingCommunity] = useState<string>('All');
   const [pendingTimeframe, setPendingTimeframe] = useState<TimeframeOption>('All Time');
   const [pendingStartDate, setPendingStartDate] = useState<string>('');
@@ -34,7 +35,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
       pendingTimeframe !== activeTimeframe ||
       (pendingTimeframe === 'Custom Range' && (pendingStartDate !== activeStartDate || pendingEndDate !== activeEndDate));
 
-  // Date Calculation
+  // Date Calculation - Memoized for performance
   const calculatedDateRange = useMemo(() => {
       const now = new Date();
       let start: Date | null = null;
@@ -58,16 +59,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
       return { start, end };
   }, [activeTimeframe, activeStartDate, activeEndDate]);
 
+  // Optimized Community List Extraction
   const communities = useMemo(() => {
     const unique = new Set(data.map(d => d.partnerCode).filter(c => c && c !== 'UNKNOWN'));
     return ['All', ...Array.from(unique).sort()];
   }, [data]);
 
+  // Filter Data - Memoized
   const communityFilteredData = useMemo(() => {
     if (activeCommunity === 'All') return data;
     return data.filter(d => d.partnerCode === activeCommunity);
   }, [data, activeCommunity]);
 
+  // Calculate Metrics - Effect ensures non-blocking UI
   useEffect(() => {
     const calculated = calculateDashboardMetrics(communityFilteredData, calculatedDateRange.start, calculatedDateRange.end);
     setMetrics(calculated);
@@ -88,7 +92,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
       } else if (metrics && aiSummary === "Waiting for data...") {
           setAiSummary("Click 'AI Insights' to analyze performance.");
       }
-  }, [data]); 
+  }, [data, metrics]); 
 
   const handleApplyFilters = () => {
       setActiveCommunity(pendingCommunity);
@@ -119,18 +123,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white dark:bg-[#141319]/95 backdrop-blur-md border border-slate-200 dark:border-white/10 p-4 rounded-xl shadow-xl text-slate-900 dark:text-white z-50">
-          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">{label}</p>
-          <div className="space-y-1">
-             <div className="flex items-center gap-3 text-sm font-medium">
-                <div className="w-2 h-2 rounded-full bg-[#2a00ff]"></div>
-                <span className="text-slate-600 dark:text-slate-300">Registrations:</span>
-                <span className="font-bold">{payload[0].value}</span>
+        <div className="bg-white/95 dark:bg-[#1c1b22]/95 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-4 rounded-xl shadow-2xl z-50 min-w-[200px]">
+          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider border-b border-slate-100 dark:border-white/10 pb-2">{label}</p>
+          <div className="space-y-2">
+             <div className="flex items-center justify-between gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-[#2a00ff] shadow-[0_0_8px_#2a00ff]"></div>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">Registrations</span>
+                </div>
+                <span className="font-bold font-mono text-slate-900 dark:text-white">{payload[0].value}</span>
              </div>
-             <div className="flex items-center gap-3 text-sm font-medium">
-                <div className="w-2 h-2 rounded-full bg-[#a522dd]"></div>
-                <span className="text-slate-600 dark:text-slate-300">Certifications:</span>
-                <span className="font-bold">{payload[1].value}</span>
+             <div className="flex items-center justify-between gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-[#a522dd] shadow-[0_0_8px_#a522dd]"></div>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">Certifications</span>
+                </div>
+                <span className="font-bold font-mono text-[#a522dd]">{payload[1].value}</span>
              </div>
           </div>
         </div>
@@ -139,60 +147,68 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
     return null;
   };
 
-  if (!metrics) return <div className="p-20 text-center text-slate-500 font-medium animate-pulse">Initializing Blockchain Nodes...</div>;
+  if (!metrics) return <div className="p-20 text-center text-slate-500 font-medium animate-pulse flex flex-col items-center gap-2"><div className="w-8 h-8 border-2 border-[#2a00ff] border-t-transparent rounded-full animate-spin"></div>Loading Analytics...</div>;
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Filters & Controls - Glass Panel */}
-      <div className="glass-panel p-6 rounded-2xl bg-white dark:bg-[#1c1b22]">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-slate-200 dark:border-white/5 pb-6">
+    <div className="space-y-8 pb-12 animate-fade-in">
+      {/* Filters & Controls - Premium Glass Panel */}
+      <div className="glass-panel p-6 lg:p-8 rounded-3xl relative overflow-hidden transition-all duration-300 hover:border-[#2a00ff]/30">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#2a00ff]/10 to-transparent blur-3xl pointer-events-none"></div>
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b border-slate-200 dark:border-white/5 pb-8 relative z-10">
              <div>
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
                     {activeCommunity === 'All' ? 'Global Overview' : activeCommunity}
-                    <div className="w-2 h-2 rounded-full bg-[#2a00ff] shadow-[0_0_10px_#2a00ff] animate-pulse"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#2a00ff] shadow-[0_0_15px_#2a00ff] animate-pulse"></div>
                 </h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 font-medium">
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 font-medium flex items-center gap-2">
+                    <Clock className="w-3 h-3" />
                     {activeTimeframe === 'All Time' 
-                        ? `Viewing all ${communityFilteredData.length.toLocaleString()} records` 
+                        ? `Live Data • ${communityFilteredData.length.toLocaleString()} Records` 
                         : `Timeframe: ${activeTimeframe === 'Custom Range' ? `${activeStartDate} - ${activeEndDate}` : activeTimeframe}`}
                 </p>
             </div>
+            
             <button 
                 onClick={handleGenerateSummary}
                 disabled={loadingAi || data.length === 0}
-                className="group flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#2a00ff] to-[#791cf5] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#2a00ff]/30 hover:shadow-[#2a00ff]/50 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:shadow-none relative overflow-hidden"
+                className="group relative flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-[#2a00ff] to-[#791cf5] text-white rounded-xl text-sm font-bold shadow-[0_0_20px_rgba(42,0,255,0.3)] hover:shadow-[0_0_30px_rgba(42,0,255,0.5)] hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:shadow-none overflow-hidden"
              >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <Sparkles className={`w-4 h-4 relative z-10 ${loadingAi ? 'animate-spin' : ''}`} />
-                <span className="relative z-10">{loadingAi ? 'Analyzing...' : 'AI Insights'}</span>
+                <span className="relative z-10 tracking-wide">{loadingAi ? 'ANALYZING...' : 'AI INSIGHTS'}</span>
              </button>
         </div>
         
-        <div className="flex flex-col xl:flex-row gap-5 items-end xl:items-center">
+        <div className="flex flex-col xl:flex-row gap-6 items-end xl:items-center relative z-10">
+             {/* Community Filter */}
              <div className="w-full xl:w-auto">
-                <label className="block text-[10px] font-bold text-[#a522dd] mb-2 uppercase tracking-wider">Community Node</label>
-                <div className="relative">
-                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <label className="block text-[10px] font-bold text-[#a522dd] mb-2 uppercase tracking-wider pl-1">Community Node</label>
+                <div className="relative group">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-hover:text-[#2a00ff] transition-colors" />
                     <select 
                         value={pendingCommunity}
                         onChange={(e) => setPendingCommunity(e.target.value)}
-                        className="pl-10 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] focus:border-transparent outline-none appearance-none w-full xl:w-64 cursor-pointer hover:border-slate-300 dark:hover:border-slate-500 transition-colors shadow-sm"
+                        className="pl-10 pr-10 py-3 bg-white dark:bg-[#1c1b22] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] focus:border-transparent outline-none appearance-none w-full xl:w-64 cursor-pointer hover:bg-slate-50 dark:hover:bg-[#141319] transition-all shadow-sm"
                     >
                         {communities.map(c => (
                             <option key={c} value={c}>{c === 'All' ? 'Global (All)' : c}</option>
                         ))}
                     </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
              </div>
 
+             {/* Timeframe Filter */}
              <div className="w-full xl:w-auto">
-                <label className="block text-[10px] font-bold text-[#a522dd] mb-2 uppercase tracking-wider">Time Epoch</label>
-                <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <label className="block text-[10px] font-bold text-[#a522dd] mb-2 uppercase tracking-wider pl-1">Time Epoch</label>
+                <div className="relative group">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-hover:text-[#2a00ff] transition-colors" />
                     <select 
                         value={pendingTimeframe}
                         onChange={(e) => setPendingTimeframe(e.target.value as TimeframeOption)}
-                        className="pl-10 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] focus:border-transparent outline-none appearance-none w-full xl:w-56 cursor-pointer hover:border-slate-300 dark:hover:border-slate-500 transition-colors shadow-sm"
+                        className="pl-10 pr-10 py-3 bg-white dark:bg-[#1c1b22] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] focus:border-transparent outline-none appearance-none w-full xl:w-56 cursor-pointer hover:bg-slate-50 dark:hover:bg-[#141319] transition-all shadow-sm"
                     >
                         <option value="All Time">All Time</option>
                         <option value="This Year">This Year</option>
@@ -200,18 +216,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
                         <option value="Last 30 Days">Last 30 Days</option>
                         <option value="Custom Range">Custom Range</option>
                     </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
              </div>
 
              {pendingTimeframe === 'Custom Range' && (
-                 <div className="flex gap-2 w-full xl:w-auto fade-in-up">
+                 <div className="flex gap-3 w-full xl:w-auto animate-fade-in-up">
                      <div>
                         <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Start Block</label>
                         <input 
                             type="date" 
                             value={pendingStartDate}
                             onChange={(e) => setPendingStartDate(e.target.value)}
-                            className="w-full px-3 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] outline-none shadow-sm"
+                            className="w-full px-4 py-3 bg-white dark:bg-[#141319] border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] outline-none shadow-sm"
                         />
                      </div>
                      <div>
@@ -220,7 +237,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
                             type="date" 
                             value={pendingEndDate}
                             onChange={(e) => setPendingEndDate(e.target.value)}
-                            className="w-full px-3 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] outline-none shadow-sm"
+                            className="w-full px-4 py-3 bg-white dark:bg-[#141319] border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2a00ff] outline-none shadow-sm"
                         />
                      </div>
                  </div>
@@ -232,8 +249,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
                     disabled={!hasUnappliedChanges}
                     className={`w-full xl:w-auto flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${
                         hasUnappliedChanges 
-                        ? 'bg-[#2a00ff] hover:bg-[#791cf5] text-white shadow-[0_0_15px_rgba(42,0,255,0.4)] hover:scale-105' 
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-default border border-slate-200 dark:border-slate-700'
+                        ? 'bg-[#2a00ff] hover:bg-[#791cf5] text-white shadow-[0_0_20px_rgba(42,0,255,0.4)] hover:scale-105 hover:-translate-y-1' 
+                        : 'bg-slate-100 dark:bg-[#1c1b22] text-slate-400 border border-slate-200 dark:border-white/10 cursor-default'
                     }`}
                  >
                     <Check className="w-4 h-4" />
@@ -244,15 +261,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
       </div>
 
       {/* AI Summary Banner */}
-      <div className="relative overflow-hidden rounded-2xl p-[1px] bg-gradient-to-r from-[#2a00ff] via-[#791cf5] to-[#a522dd] shadow-lg animate-fade-in">
-        <div className="bg-white/95 dark:bg-[#141319]/95 backdrop-blur-xl rounded-[15px] p-6 relative z-10">
-            <div className="flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-br from-[#2a00ff]/10 to-[#791cf5]/10 border border-[#2a00ff]/20 text-[#a522dd] rounded-xl shrink-0">
+      <div className="relative overflow-hidden rounded-3xl p-[1px] bg-gradient-to-r from-[#2a00ff] via-[#791cf5] to-[#a522dd] shadow-[0_10px_40px_-10px_rgba(121,28,245,0.3)] animate-fade-in-up animate-delay-100">
+        <div className="bg-white/95 dark:bg-[#141319]/95 backdrop-blur-3xl rounded-[23px] p-8 relative z-10">
+            <div className="flex items-start gap-5">
+                <div className="p-3.5 bg-gradient-to-br from-[#2a00ff] to-[#791cf5] text-white rounded-2xl shrink-0 shadow-[0_0_15px_#2a00ff]">
                     <Activity className="w-6 h-6" />
                 </div>
                 <div>
-                    <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-1 flex items-center gap-2">
-                        Executive AI Summary <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">Gemini 2.5</span>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-2 flex items-center gap-3">
+                        Executive AI Summary 
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 uppercase tracking-widest">Gemini 2.5 Flash</span>
                     </h3>
                     <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm md:text-base max-w-5xl">
                         {aiSummary}
@@ -263,7 +281,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
       </div>
 
       {/* Metric Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up animate-delay-200">
         <StatCard
           title="Registered Developers"
           value={metrics.totalRegistered.toLocaleString()}
@@ -315,7 +333,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
           value={`${metrics.potentialFakeAccounts} (${metrics.potentialFakeAccountsPct.toFixed(1)}%)`}
           icon={<AlertTriangle className="w-5 h-5" />}
           alert={metrics.potentialFakeAccounts > 0}
-          tooltip="Includes Speed Runs (<4h), Disposable Emails, and Shared Wallets. Does NOT include Data Errors (Time Travelers)."
+          tooltip="Includes Speed Runs (<4h), Disposable Emails, and Shared Wallets."
           onClick={() => onNavigate('developers', { statusFilter: 'Flagged', communityFilter: activeCommunity })}
         />
         <StatCard
@@ -327,49 +345,49 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in-up animate-delay-300">
         
         {/* Growth Area Chart */}
-        <div className="glass-card p-6 rounded-2xl bg-white dark:bg-transparent border border-slate-200 dark:border-white/5">
-          <div className="flex justify-between items-center mb-6">
+        <div className="glass-card p-8 rounded-3xl bg-white dark:bg-[#1c1b22]/40 border border-slate-200 dark:border-white/5 shadow-xl">
+          <div className="flex justify-between items-center mb-8">
             <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-3 text-lg">
-                <div className="w-1 h-6 bg-[#2a00ff] rounded-full shadow-[0_0_10px_#2a00ff]"></div> 
+                <div className="w-1.5 h-6 bg-[#2a00ff] rounded-full shadow-[0_0_10px_#2a00ff]"></div> 
                 Growth Evolution
             </h3>
-            <div className="flex gap-4 text-xs font-bold">
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-[#2a00ff] rounded-full"></div> <span className="text-slate-600 dark:text-slate-300">Registrations</span>
+            <div className="flex gap-5 text-xs font-bold">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#2a00ff]/10 rounded-full border border-[#2a00ff]/20">
+                    <div className="w-2.5 h-2.5 bg-[#2a00ff] rounded-full shadow-[0_0_5px_#2a00ff]"></div> <span className="text-slate-600 dark:text-slate-300">Registrations</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-[#a522dd] rounded-full"></div> <span className="text-slate-600 dark:text-slate-300">Certifications</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#a522dd]/10 rounded-full border border-[#a522dd]/20">
+                    <div className="w-2.5 h-2.5 bg-[#a522dd] rounded-full shadow-[0_0_5px_#a522dd]"></div> <span className="text-slate-600 dark:text-slate-300">Certifications</span>
                 </div>
             </div>
           </div>
           
-          <div className="h-72 w-full">
+          <div className="h-80 w-full">
             {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                     <defs>
                         <linearGradient id="colorReg" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#2a00ff" stopOpacity={0.3}/>
+                            <stop offset="5%" stopColor="#2a00ff" stopOpacity={0.4}/>
                             <stop offset="95%" stopColor="#2a00ff" stopOpacity={0}/>
                         </linearGradient>
                         <linearGradient id="colorCert" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#a522dd" stopOpacity={0.3}/>
+                            <stop offset="5%" stopColor="#a522dd" stopOpacity={0.4}/>
                             <stop offset="95%" stopColor="#a522dd" stopOpacity={0}/>
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-700" strokeOpacity={0.2} />
-                    <XAxis dataKey="name" stroke="currentColor" className="text-slate-500 dark:text-slate-400" fontSize={11} tickLine={false} axisLine={false} minTickGap={30} dy={10} />
-                    <YAxis stroke="currentColor" className="text-slate-500 dark:text-slate-400" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area type="monotone" dataKey="registrations" stroke="#2a00ff" strokeWidth={3} fillOpacity={1} fill="url(#colorReg)" />
-                    <Area type="monotone" dataKey="certifications" stroke="#a522dd" strokeWidth={3} fillOpacity={1} fill="url(#colorCert)" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-white/5" strokeOpacity={0.5} />
+                    <XAxis dataKey="name" stroke="currentColor" className="text-slate-500 dark:text-slate-500" fontSize={11} tickLine={false} axisLine={false} minTickGap={30} dy={10} />
+                    <YAxis stroke="currentColor" className="text-slate-500 dark:text-slate-500" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#2a00ff', strokeWidth: 1, strokeDasharray: '5 5' }} />
+                    <Area type="monotone" dataKey="registrations" stroke="#2a00ff" strokeWidth={3} fillOpacity={1} fill="url(#colorReg)" activeDot={{ r: 6, strokeWidth: 0, fill: '#fff' }} animationDuration={1500} />
+                    <Area type="monotone" dataKey="certifications" stroke="#a522dd" strokeWidth={3} fillOpacity={1} fill="url(#colorCert)" activeDot={{ r: 6, strokeWidth: 0, fill: '#fff' }} animationDuration={1500} />
                 </AreaChart>
                 </ResponsiveContainer>
             ) : (
-                <div className="h-full flex items-center justify-center text-slate-400 text-sm border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm border border-dashed border-slate-300 dark:border-white/10 rounded-2xl bg-slate-50 dark:bg-white/5">
                     No data recorded for this period.
                 </div>
             )}
@@ -377,39 +395,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onNavigate }) => {
         </div>
 
         {/* Leaderboard Bar Chart */}
-        <div className="glass-card p-6 rounded-2xl bg-white dark:bg-transparent border border-slate-200 dark:border-white/5">
-            <h3 className="font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-3 text-lg">
-                <div className="w-1 h-6 bg-[#791cf5] rounded-full shadow-[0_0_10px_#791cf5]"></div> 
+        <div className="glass-card p-8 rounded-3xl bg-white dark:bg-[#1c1b22]/40 border border-slate-200 dark:border-white/5 shadow-xl">
+            <h3 className="font-bold text-slate-800 dark:text-white mb-8 flex items-center gap-3 text-lg">
+                <div className="w-1.5 h-6 bg-[#791cf5] rounded-full shadow-[0_0_10px_#791cf5]"></div> 
                 {activeCommunity === 'All' ? 'Top Communities' : 'Contribution'}
             </h3>
-            <div className="h-72 w-full">
+            <div className="h-80 w-full">
                 {leaderboardData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={leaderboardData} layout="vertical" margin={{ left: 40 }}>
-                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-700" strokeOpacity={0.2}/>
+                        <BarChart data={leaderboardData} layout="vertical" margin={{ left: 40, right: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="currentColor" className="text-slate-200 dark:text-white/5" strokeOpacity={0.5}/>
                             <XAxis type="number" hide />
-                            <YAxis dataKey="name" type="category" width={100} stroke="currentColor" className="text-slate-500 dark:text-slate-400" fontSize={11} tickLine={false} axisLine={false} />
+                            <YAxis dataKey="name" type="category" width={100} stroke="currentColor" className="text-slate-500 dark:text-slate-400" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} />
                             <Tooltip 
-                                cursor={{fill: 'rgba(255,255,255,0.05)'}} 
-                                contentStyle={{ backgroundColor: '#141319', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                                cursor={{fill: 'rgba(42,0,255,0.05)'}} 
+                                contentStyle={{ backgroundColor: '#1c1b22', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
                             />
-                            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16} name="Certified Users">
+                            <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={20} name="Certified Users" animationDuration={1500}>
                                 {leaderboardData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={`url(#barGradient-${index})`} />
+                                    <Cell key={`cell-${index}`} fill={`url(#barGradient-${index})`} className="hover:opacity-80 transition-opacity" />
                                 ))}
                             </Bar>
                             <defs>
                                 {leaderboardData.map((entry, index) => (
                                     <linearGradient key={`grad-${index}`} id={`barGradient-${index}`} x1="0" y1="0" x2="1" y2="0">
                                         <stop offset="0%" stopColor="#2a00ff" />
-                                        <stop offset="100%" stopColor="#a522dd" />
+                                        <stop offset="100%" stopColor="#791cf5" />
                                     </linearGradient>
                                 ))}
                             </defs>
                         </BarChart>
                     </ResponsiveContainer>
                 ) : (
-                    <div className="h-full flex items-center justify-center text-slate-400 text-sm border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
+                    <div className="h-full flex items-center justify-center text-slate-400 text-sm border border-dashed border-slate-300 dark:border-white/10 rounded-2xl bg-slate-50 dark:bg-white/5">
                         No leaderboard data.
                     </div>
                 )}

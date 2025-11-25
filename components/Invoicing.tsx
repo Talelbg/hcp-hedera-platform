@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Invoice, InvoiceStatus, DeveloperRecord, CommunityAgreement, PaymentModel, BillingCycle, Currency, PaymentMethod, InvoiceLineItem, AdminUser, UserRole } from '../types';
 import { Plus, Edit3, Trash2, Wallet, CreditCard, FileText, Check, AlertCircle, Save, Users, Award, TrendingUp, DollarSign, Calendar, Upload, File, X, Shield, Search, ChevronDown } from 'lucide-react';
@@ -178,8 +179,8 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
       };
 
       return (
-          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto flex flex-col animate-in fade-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+              <div className="bg-white dark:bg-[#1c1b22] border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto flex flex-col animate-in fade-in zoom-in-95 duration-200">
                   {/* Header */}
                   <div className="px-8 py-6 border-b border-slate-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 sticky top-0 z-10 backdrop-blur-md">
                       <div>
@@ -192,16 +193,16 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
                       </div>
                   </div>
                   <div className="p-8 space-y-8">
-                      <div className="grid grid-cols-3 gap-6 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-white/5">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 dark:bg-white/5 p-6 rounded-xl border border-slate-200 dark:border-white/5">
                           {['issueDate', 'dueDate'].map(f => (
                               <div key={f}>
                                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">{f}</label>
-                                  <input type="date" value={(inv as any)[f]} onChange={e => updateInvoice({ [f]: e.target.value })} className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-cyan-500 outline-none shadow-sm" />
+                                  <input type="date" value={(inv as any)[f]} onChange={e => updateInvoice({ [f]: e.target.value })} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-[#2a00ff] outline-none shadow-sm" />
                               </div>
                           ))}
                           <div>
                               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Currency</label>
-                              <select value={inv.currency} onChange={e => updateInvoice({ currency: e.target.value as Currency })} className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white font-medium outline-none shadow-sm"><option>USD</option><option>HBAR</option><option>USDC</option><option>EUR</option></select>
+                              <select value={inv.currency} onChange={e => updateInvoice({ currency: e.target.value as Currency })} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-medium outline-none shadow-sm"><option>USD</option><option>HBAR</option><option>USDC</option><option>EUR</option></select>
                           </div>
                       </div>
                       
@@ -213,15 +214,15 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
                                   <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700"><tr><th className="px-4 py-3">Description</th><th className="px-4 py-3 w-24">Qty</th><th className="px-4 py-3 w-32 text-right">Price</th><th className="px-4 py-3 w-32 text-right">Total</th><th className="w-10"></th></tr></thead>
                                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700">{inv.items.map(item => (
                                       <tr key={item.id} className="bg-white dark:bg-slate-900">
-                                          <td className="p-3"><input value={item.description} onChange={e => updateLineItem(item.id, 'description', e.target.value)} className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-white focus:border-cyan-500 outline-none" /></td>
-                                          <td className="p-3"><input type="number" value={item.quantity} onChange={e => updateLineItem(item.id, 'quantity', e.target.value)} className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-center text-slate-900 dark:text-white focus:border-cyan-500 outline-none" /></td>
-                                          <td className="p-3"><input type="number" value={item.unitPrice} onChange={e => updateLineItem(item.id, 'unitPrice', e.target.value)} className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-right text-slate-900 dark:text-white focus:border-cyan-500 outline-none" /></td>
+                                          <td className="p-3"><input value={item.description} onChange={e => updateLineItem(item.id, 'description', e.target.value)} className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-white focus:border-[#2a00ff] outline-none" /></td>
+                                          <td className="p-3"><input type="number" value={item.quantity} onChange={e => updateLineItem(item.id, 'quantity', e.target.value)} className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-center text-slate-900 dark:text-white focus:border-[#2a00ff] outline-none" /></td>
+                                          <td className="p-3"><input type="number" value={item.unitPrice} onChange={e => updateLineItem(item.id, 'unitPrice', e.target.value)} className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-right text-slate-900 dark:text-white focus:border-[#2a00ff] outline-none" /></td>
                                           <td className="p-3 text-right font-mono font-bold text-slate-700 dark:text-slate-300">{item.total.toLocaleString()}</td>
                                           <td className="p-3 text-center"><button onClick={() => updateInvoice({ items: inv.items.filter(i => i.id !== item.id) })} className="text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button></td>
                                       </tr>
                                   ))}</tbody>
                               </table>
-                              <button onClick={() => updateInvoice({ items: [...inv.items, { id: `i_${Date.now()}`, description: '', quantity: 1, unitPrice: 0, total: 0 }] })} className="w-full py-3 text-center text-sm font-bold text-cyan-600 dark:text-cyan-400 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-t border-slate-200 dark:border-slate-700">+ Add Line Item</button>
+                              <button onClick={() => updateInvoice({ items: [...inv.items, { id: `i_${Date.now()}`, description: '', quantity: 1, unitPrice: 0, total: 0 }] })} className="w-full py-3 text-center text-sm font-bold text-[#2a00ff] dark:text-[#2a00ff] bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-t border-slate-200 dark:border-slate-700">+ Add Line Item</button>
                           </div>
                       </div>
 
@@ -243,13 +244,13 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
     <div className="space-y-8 fade-in-up">
       <div className="glass-panel p-6 rounded-2xl flex flex-wrap gap-4 items-center bg-white dark:bg-[#1c1b22]">
          <div className="flex border-r border-slate-200 dark:border-white/10 pr-4 gap-2">
-            <button onClick={() => setActiveTab('invoices')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'invoices' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'}`}>Invoices</button>
-            <button onClick={() => { setActiveTab('partners'); setSelectedPartnerCode(null); }} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'partners' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'}`}>Partners</button>
+            <button onClick={() => setActiveTab('invoices')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'invoices' ? 'bg-[#2a00ff] text-white shadow-lg shadow-[#2a00ff]/30' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'}`}>Invoices</button>
+            <button onClick={() => { setActiveTab('partners'); setSelectedPartnerCode(null); }} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'partners' ? 'bg-[#2a00ff] text-white shadow-lg shadow-[#2a00ff]/30' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'}`}>Partners</button>
          </div>
          {activeTab === 'invoices' && (
              <>
-                 <input type="month" value={billingMonth} onChange={e => setBillingMonth(e.target.value)} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500 shadow-sm" />
-                 <select value={filterCommunity} onChange={e => setFilterCommunity(e.target.value)} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500 min-w-[200px] shadow-sm">
+                 <input type="month" value={billingMonth} onChange={e => setBillingMonth(e.target.value)} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff] shadow-sm" />
+                 <select value={filterCommunity} onChange={e => setFilterCommunity(e.target.value)} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff] min-w-[200px] shadow-sm">
                      <option value="">Filter by Partner...</option>
                      {partners.map(p => <option key={p} value={p}>{p}</option>)}
                  </select>
@@ -388,9 +389,9 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
 
       {/* AGREEMENT EDITOR MODAL */}
       {editingAgreement && (
-          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-3xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-                  <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+              <div className="bg-white dark:bg-[#1c1b22] border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-3xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+                  <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center sticky top-0 bg-inherit z-10">
                      <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                         {editingAgreement === 'new' ? 'Create Partner Agreement' : 'Edit Agreement'}
                      </h3>
@@ -415,7 +416,7 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
                               <button 
                                 type="button"
                                 onClick={() => setIsAdminDropdownOpen(!isAdminDropdownOpen)}
-                                className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500 flex justify-between items-center"
+                                className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff] flex justify-between items-center"
                               >
                                   {admins.find(a => a.id === tempAgreement.assignedAdminId)?.name || "Select Responsible Person..."}
                                   <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -431,7 +432,7 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
                                                   placeholder="Search admin..."
                                                   value={adminSearch}
                                                   onChange={e => setAdminSearch(e.target.value)}
-                                                  className="w-full pl-7 p-1.5 text-xs bg-slate-50 dark:bg-slate-800 rounded border border-transparent focus:border-cyan-500 outline-none"
+                                                  className="w-full pl-7 p-1.5 text-xs bg-slate-50 dark:bg-slate-800 rounded border border-transparent focus:border-[#2a00ff] outline-none text-white"
                                               />
                                           </div>
                                       </div>
@@ -468,7 +469,7 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
                               value={tempAgreement.description || ''}
                               onChange={e => setTempAgreement({...tempAgreement, description: e.target.value})}
                               placeholder="e.g. 2025 Strategic Growth Contract"
-                              className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff]"
                           />
                       </div>
 
@@ -476,11 +477,11 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
                       <div className="grid grid-cols-3 gap-4">
                           <div>
                               <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Start Date</label>
-                              <input type="date" value={tempAgreement.startDate || ''} onChange={e => setTempAgreement({...tempAgreement, startDate: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500" />
+                              <input type="date" value={tempAgreement.startDate || ''} onChange={e => setTempAgreement({...tempAgreement, startDate: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff]" />
                           </div>
                           <div>
                               <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">End Date (Optional)</label>
-                              <input type="date" value={tempAgreement.endDate || ''} onChange={e => setTempAgreement({...tempAgreement, endDate: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500" />
+                              <input type="date" value={tempAgreement.endDate || ''} onChange={e => setTempAgreement({...tempAgreement, endDate: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff]" />
                           </div>
                           <div className="flex items-end pb-3">
                               <label className="flex items-center gap-2 cursor-pointer">
@@ -496,28 +497,28 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
                           <div className="grid grid-cols-3 gap-4 mb-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 mb-1">Payment Model</label>
-                                <select value={tempAgreement.paymentModel} onChange={e => setTempAgreement({...tempAgreement, paymentModel: e.target.value as any})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500">
+                                <select value={tempAgreement.paymentModel} onChange={e => setTempAgreement({...tempAgreement, paymentModel: e.target.value as any})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff]">
                                     <option value="Per_Certification">Per Certification</option>
                                     <option value="Fixed_Recurring">Fixed Recurring</option>
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 mb-1">Amount</label>
-                                <input type="number" value={tempAgreement.unitPrice} onChange={e => setTempAgreement({...tempAgreement, unitPrice: Number(e.target.value)})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500" />
+                                <input type="number" value={tempAgreement.unitPrice} onChange={e => setTempAgreement({...tempAgreement, unitPrice: Number(e.target.value)})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff]" />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 mb-1">Currency</label>
-                                <select value={tempAgreement.currency} onChange={e => setTempAgreement({...tempAgreement, currency: e.target.value as any})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500"><option>USD</option><option>HBAR</option><option>USDC</option><option>EUR</option></select>
+                                <select value={tempAgreement.currency} onChange={e => setTempAgreement({...tempAgreement, currency: e.target.value as any})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff]"><option>USD</option><option>HBAR</option><option>USDC</option><option>EUR</option></select>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                               <div>
                                   <label className="block text-xs font-bold text-slate-500 mb-1">Billing Contact Email</label>
-                                  <input value={tempAgreement.contactEmail || ''} onChange={e => setTempAgreement({...tempAgreement,contactEmail: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500" />
+                                  <input value={tempAgreement.contactEmail || ''} onChange={e => setTempAgreement({...tempAgreement,contactEmail: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff]" />
                               </div>
                               <div>
                                   <label className="block text-xs font-bold text-slate-500 mb-1">Billing Cycle</label>
-                                  <select value={tempAgreement.billingCycle} onChange={e => setTempAgreement({...tempAgreement, billingCycle: e.target.value as any})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500">
+                                  <select value={tempAgreement.billingCycle} onChange={e => setTempAgreement({...tempAgreement, billingCycle: e.target.value as any})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff]">
                                       <option value="Monthly">Monthly</option>
                                       <option value="Quarterly">Quarterly</option>
                                   </select>
@@ -533,7 +534,7 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
                                   value={tempDoc} 
                                   onChange={e => setTempDoc(e.target.value)} 
                                   placeholder="Document Name or URL..."
-                                  className="flex-1 p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500"
+                                  className="flex-1 p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#2a00ff]"
                               />
                               <button onClick={handleAddDocument} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-medium hover:bg-slate-300 dark:hover:bg-slate-600">Attach</button>
                           </div>
@@ -548,7 +549,7 @@ export const Invoicing: React.FC<InvoicingProps> = ({ data, admins, invoices, se
                       </div>
 
                   </div>
-                  <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+                  <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 sticky bottom-0 bg-inherit z-10">
                       <button onClick={() => setEditingAgreement(null)} className="px-4 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors">Cancel</button>
                       <button onClick={handleSaveAgreement} className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-colors">Save Agreement</button>
                   </div>
