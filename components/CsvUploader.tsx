@@ -33,7 +33,7 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [lastUploadedVersion, setLastUploadedVersion] = useState<DatasetVersion | null>(null);
-  const MAX_UPLOAD_BYTES = 4.5 * 1024 * 1024; // Keep requests under Netlify Function payload limits
+  const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // Allow larger datasets within updated Netlify Function payload limits
 
   // --- LOCAL DB SYNC LOGIC ---
   const saveToLocalDb = (version: DatasetVersion) => {
@@ -246,8 +246,8 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
 
     if (file.size > MAX_UPLOAD_BYTES) {
         const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
-        const limitMb = (MAX_UPLOAD_BYTES / (1024 * 1024)).toFixed(1);
-        const message = `The selected CSV is ${sizeMb} MB, which exceeds the ${limitMb} MB upload allowance for this ingest flow due to Netlify Function request limits. Please split or compress the dataset before uploading.`;
+        const limitMb = (MAX_UPLOAD_BYTES / (1024 * 1024)).toFixed(0);
+        const message = `The selected CSV is ${sizeMb} MB, which exceeds the ${limitMb} MB upload allowance for this ingest flow due to Netlify Function request limits. Please reduce the file size before uploading.`;
         setFileName(null);
         setIsProcessing(false);
         setStatusMessage('');
@@ -388,7 +388,7 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
                 ) : isProcessing ? (
                     statusMessage
                 ) : (
-                    "Upload the Master CSV (keep under ~4.5MB per Netlify Function limits). Auto-detects 'Email' & 'Code', fixes timestamps, flags fraud, and saves to Local DB."
+                    "Upload the Master CSV (keep under ~25MB per Netlify Function limits). Auto-detects 'Email' & 'Code', fixes timestamps, flags fraud, and saves to Local DB."
                 )}
             </p>
             </div>

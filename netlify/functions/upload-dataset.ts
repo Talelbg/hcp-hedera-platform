@@ -2,6 +2,7 @@ import type { Handler, HandlerEvent } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 
 const DEFAULT_STORE_NAME = 'developer-datasets';
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MB upload ceiling per ingest request
 
 const sanitizeFileName = (fileName: string): string => {
   return fileName
@@ -98,6 +99,15 @@ export const handler: Handler = async (event) => {
           return jsonResponse(400, { error: 'Missing content.' });
         }
 
+        const contentBytes = Buffer.byteLength(content, 'utf8');
+        if (contentBytes > MAX_UPLOAD_BYTES) {
+          return jsonResponse(413, {
+            error: `Payload exceeds ${Math.floor(
+              MAX_UPLOAD_BYTES / (1024 * 1024)
+            )} MB limit.`,
+          });
+        }
+
         const objectKey = buildObjectKey(fileName);
         try {
           await store.set(objectKey, content);
@@ -132,6 +142,14 @@ export const handler: Handler = async (event) => {
           (typeof providedName === 'string' && providedName.trim()) ||
           fileEntry.name ||
           'dataset.csv';
+
+        if (fileEntry.size > MAX_UPLOAD_BYTES) {
+          return jsonResponse(413, {
+            error: `Payload exceeds ${Math.floor(
+              MAX_UPLOAD_BYTES / (1024 * 1024)
+            )} MB limit.`,
+          });
+        }
 
         const objectKey = buildObjectKey(fileName);
 
