@@ -19,6 +19,17 @@ const REQUIRED_HEADERS_CORE = [
   "Completed At", "Final Score", "Final Grade", "CA Status"
 ];
 
+// Pre-compute a mapping from normalized header names to actual header names
+type HeaderMap = Map<string, string>;
+
+const buildHeaderMap = (headers: string[]): HeaderMap => {
+  const map = new Map<string, string>();
+  for (const header of headers) {
+    map.set(normalizeHeader(header), header);
+  }
+  return map;
+};
+
 // Find a header in CSV headers using case-insensitive matching
 export const findHeader = (headers: string[], targetHeader: string): string | undefined => {
   const normalizedTarget = normalizeHeader(targetHeader);
@@ -37,17 +48,23 @@ export const hasPartnerCodeColumns = (headers: string[]) => {
     return false;
 };
 
-// Get value from row using case-insensitive header matching
+// Get value from row using pre-computed header map (O(1) lookup)
+const getRowValueFromMap = (row: any, headerMap: HeaderMap, targetHeader: string): any => {
+  const actualHeader = headerMap.get(normalizeHeader(targetHeader));
+  return actualHeader ? row[actualHeader] : undefined;
+};
+
+// Get value from row using case-insensitive header matching (for external use)
 export const getRowValue = (row: any, headers: string[], targetHeader: string): any => {
   const actualHeader = findHeader(headers, targetHeader);
   return actualHeader ? row[actualHeader] : undefined;
 };
 
-const mapCsvRowToRecord = (row: any, headers: string[]): Omit<DeveloperRecord, 'id'> => {
+const mapCsvRowToRecord = (row: any, headerMap: HeaderMap): Omit<DeveloperRecord, 'id'> => {
   // Logic to resolve partner code (case-insensitive)
   let partnerCode = 'UNKNOWN';
-  const partnerCodeValue = getRowValue(row, headers, 'Partner Code');
-  const codeValue = getRowValue(row, headers, 'Code');
+  const partnerCodeValue = getRowValueFromMap(row, headerMap, 'Partner Code');
+  const codeValue = getRowValueFromMap(row, headerMap, 'Code');
   
   if (partnerCodeValue) {
       partnerCode = partnerCodeValue;
@@ -55,25 +72,25 @@ const mapCsvRowToRecord = (row: any, headers: string[]): Omit<DeveloperRecord, '
       partnerCode = codeValue;
   }
 
-  const acceptedMembershipValue = getRowValue(row, headers, 'Accepted Membership');
-  const acceptedMarketingValue = getRowValue(row, headers, 'Accepted Marketing');
+  const acceptedMembershipValue = getRowValueFromMap(row, headerMap, 'Accepted Membership');
+  const acceptedMarketingValue = getRowValueFromMap(row, headerMap, 'Accepted Marketing');
 
   return {
-    email: getRowValue(row, headers, 'Email') || '',
-    firstName: getRowValue(row, headers, 'First Name') || '',
-    lastName: getRowValue(row, headers, 'Last Name') || '',
-    phone: getRowValue(row, headers, 'Phone Number') || '',
-    country: getRowValue(row, headers, 'Country') || '',
+    email: getRowValueFromMap(row, headerMap, 'Email') || '',
+    firstName: getRowValueFromMap(row, headerMap, 'First Name') || '',
+    lastName: getRowValueFromMap(row, headerMap, 'Last Name') || '',
+    phone: getRowValueFromMap(row, headerMap, 'Phone Number') || '',
+    country: getRowValueFromMap(row, headerMap, 'Country') || '',
     acceptedMembership: String(acceptedMembershipValue).toLowerCase() === 'true' || acceptedMembershipValue === '1',
     acceptedMarketing: String(acceptedMarketingValue).toLowerCase() === 'true' || acceptedMarketingValue === '1',
-    walletAddress: getRowValue(row, headers, 'Wallet Address') || '',
+    walletAddress: getRowValueFromMap(row, headerMap, 'Wallet Address') || '',
     partnerCode: partnerCode,
-    percentageCompleted: Number(getRowValue(row, headers, 'Percentage Completed')) || 0,
-    createdAt: getRowValue(row, headers, 'Created At') || new Date().toISOString(),
-    completedAt: getRowValue(row, headers, 'Completed At') || null,
-    finalScore: Number(getRowValue(row, headers, 'Final Score')) || 0,
-    finalGrade: (getRowValue(row, headers, 'Final Grade') as any) || 'Pending',
-    caStatus: getRowValue(row, headers, 'CA Status') || '',
+    percentageCompleted: Number(getRowValueFromMap(row, headerMap, 'Percentage Completed')) || 0,
+    createdAt: getRowValueFromMap(row, headerMap, 'Created At') || new Date().toISOString(),
+    completedAt: getRowValueFromMap(row, headerMap, 'Completed At') || null,
+    finalScore: Number(getRowValueFromMap(row, headerMap, 'Final Score')) || 0,
+    finalGrade: (getRowValueFromMap(row, headerMap, 'Final Grade') as any) || 'Pending',
+    caStatus: getRowValueFromMap(row, headerMap, 'CA Status') || '',
   };
 };
 
@@ -96,19 +113,22 @@ const processParsedData = (results: Papa.ParseResult<any>): CsvImportResult => {
     };
   }
 
+  // Pre-compute header map for O(1) lookups during row processing
+  const headerMap = buildHeaderMap(headers);
+
   const validRecords: Omit<DeveloperRecord, 'id'>[] = [];
   const errors: string[] = [];
 
   results.data.forEach((row: any, index) => {
      // Basic validation (case-insensitive)
-     const emailValue = getRowValue(row, headers, 'Email');
+     const emailValue = getRowValueFromMap(row, headerMap, 'Email');
      if (!emailValue) {
          errors.push(`Row ${index + 2}: Missing Email`);
          return;
      }
 
      try {
-         const record = mapCsvRowToRecord(row, headers);
+         const record = mapCsvRowToRecord(row, headerMap);
          validRecords.push(record);
      } catch (e) {
          errors.push(`Row ${index + 2}: Error parsing data`);
