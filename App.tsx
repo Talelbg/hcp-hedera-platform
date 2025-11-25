@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
@@ -9,6 +10,7 @@ import { EventManagement } from './components/EventManagement';
 import { SmartOutreach } from './components/SmartOutreach';
 import { AdminSettings } from './components/AdminSettings';
 import { Reporting } from './components/Reporting';
+import { UserProfile } from './components/UserProfile';
 import { 
   DeveloperRecord, 
   DatasetVersion, 
@@ -72,6 +74,13 @@ function App() {
       return versions.find(v => v.id === activeVersionId)?.fileName || 'Unknown Version';
   }, [versions, activeVersionId]);
 
+  // Assume First Admin is Current User for Demo
+  const currentUser = admins[0];
+
+  const handleUpdateProfile = (updatedUser: AdminUser) => {
+      setAdmins(admins.map(a => a.id === updatedUser.id ? updatedUser : a));
+  };
+
   const handleDataLoaded = (newData: DeveloperRecord[], fileName: string) => {
     const newVersion: DatasetVersion = { id: `ver_${Date.now()}`, fileName, uploadDate: new Date().toISOString(), recordCount: newData.length, data: newData };
     setVersions(prev => [newVersion, ...prev]);
@@ -133,6 +142,9 @@ function App() {
           setMasterRegistry={setMasterRegistry}
         />
       );
+      case 'profile': return (
+        <UserProfile user={currentUser} onUpdate={handleUpdateProfile} />
+      );
       default: return <div className="p-10 text-center text-slate-400">Module under construction</div>;
     }
   };
@@ -184,7 +196,10 @@ function App() {
                  <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:text-[#2a00ff] dark:hover:text-[#2a00ff] transition-all hover:scale-110">
                      {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                  </button>
-                 <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#2a00ff] to-[#a522dd] flex items-center justify-center text-xs font-extrabold text-white shadow-lg shadow-[#2a00ff]/30 cursor-pointer hover:scale-105 transition-transform border border-white/10 relative overflow-hidden group">
+                 <div 
+                    onClick={() => setCurrentView('profile')}
+                    className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#2a00ff] to-[#a522dd] flex items-center justify-center text-xs font-extrabold text-white shadow-lg shadow-[#2a00ff]/30 cursor-pointer hover:scale-105 transition-transform border border-white/10 relative overflow-hidden group"
+                 >
                      <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                      SA
                  </div>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { LayoutDashboard, FileText, Users, Calendar, ShieldAlert, Send, Crown, BarChart, ChevronRight } from 'lucide-react';
 
@@ -25,7 +26,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView })
 
       {/* Brand Header */}
       <div className="h-24 flex items-center justify-center lg:justify-start lg:px-8 border-b border-white/5 relative z-10">
-        <div className="relative group cursor-pointer flex items-center gap-3">
+        <div 
+            onClick={() => setCurrentView('dashboard')}
+            className="relative group cursor-pointer flex items-center gap-3"
+        >
             {/* Logo Abstract Shape */}
             <div className="relative">
                 <div className="absolute inset-0 bg-[#2a00ff] blur-lg opacity-40 group-hover:opacity-60 transition-opacity rounded-full"></div>
@@ -73,8 +77,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView })
 
       {/* User Profile */}
       <div className="p-4 border-t border-white/5 bg-[#141319] relative z-10">
-        <div className="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-white/5 to-transparent hover:from-white/10 transition-all cursor-pointer border border-white/5 group shadow-lg">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a00ff] to-[#791cf5] flex items-center justify-center text-xs font-extrabold text-white shadow-[0_0_15px_rgba(42,0,255,0.4)] relative overflow-hidden">
+        <button 
+            onClick={() => setCurrentView('profile')}
+            className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer border group shadow-lg text-left ${currentView === 'profile' ? 'bg-white/10 border-[#2a00ff]/50' : 'bg-gradient-to-r from-white/5 to-transparent hover:from-white/10 border-white/5'}`}
+        >
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2a00ff] to-[#791cf5] flex items-center justify-center text-xs font-extrabold text-white shadow-[0_0_15px_rgba(42,0,255,0.4)] relative overflow-hidden shrink-0">
              <div className="absolute inset-0 bg-white/20 group-hover:animate-pulse"></div>
              SA
           </div>
@@ -85,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView })
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Online</p>
             </div>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   );

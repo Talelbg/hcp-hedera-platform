@@ -1,3 +1,4 @@
+
 import { DeveloperRecord, ChartDataPoint, MembershipMetrics, MembershipChartPoint } from '../types';
 
 // Helper to check if a date falls within a specific date range
@@ -65,6 +66,9 @@ export const processIngestedData = (rawData: DeveloperRecord[]): DeveloperRecord
       '10minutemail.com', 'sharklasers.com', 'throwawaymail.com', 'getnada.com'
   ];
 
+  // EMAIL FORMAT REGEX
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   return rawData.map((record) => {
     // 1. Apply AM/PM Fix
     const r = applyAmPmFix(record);
@@ -97,20 +101,30 @@ export const processIngestedData = (rawData: DeveloperRecord[]): DeveloperRecord
 
     // 3. Email Forensics
     if (r.email) {
+        // A. Format Validation
+        if (!emailRegex.test(r.email)) {
+            isSuspicious = true;
+            flags.push('Invalid Email Format');
+        }
+
         const emailLower = r.email.toLowerCase();
         
-        // Alias Check (e.g. user+test@gmail.com)
+        // B. Alias Check (e.g. user+test@gmail.com)
         if (emailLower.includes('+')) {
             isSuspicious = true;
             flags.push('Email Alias');
         }
 
-        // Disposable Domain Check
+        // C. Disposable Domain Check
         const domain = emailLower.split('@')[1];
         if (domain && disposableDomains.includes(domain)) {
             isSuspicious = true;
             flags.push('Disposable Email');
         }
+    } else {
+        // No Email Present
+        dataError = true;
+        flags.push('Missing Email');
     }
 
     // 4. Sybil Check (Duplicate Wallets)
