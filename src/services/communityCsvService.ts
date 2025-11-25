@@ -29,6 +29,10 @@ export const createSlug = (name: string): string => {
 /**
  * Normalizes a community name by trimming whitespace,
  * collapsing multiple spaces, and handling common encoding issues.
+ * 
+ * Note: The replacement character (U+FFFD '�') handling addresses
+ * common issues when CSV files are saved with different encodings
+ * (e.g., Latin-1 to UTF-8 conversion artifacts).
  */
 export const normalizeName = (name: string): string => {
   if (!name || typeof name !== 'string') return '';
@@ -37,7 +41,10 @@ export const normalizeName = (name: string): string => {
     .trim()
     // Collapse multiple spaces
     .replace(/\s+/g, ' ')
-    // Handle some common encoding artifacts (e.g., "solidarit�la�que")
+    // Handle Unicode replacement character (common encoding artifact)
+    // This appears when characters from other encodings can't be decoded as UTF-8
+    .replace(/\uFFFD/g, '?')
+    // Also handle the literal bytes that may appear as � in some contexts
     .replace(/�/g, '?')
     // Remove null bytes
     .replace(/\0/g, '');

@@ -112,6 +112,10 @@ export const communityService = {
       const chunk = communities.slice(i, i + batchSize);
       const batch = writeBatch(db);
 
+      // Track counts for this specific chunk
+      let chunkImported = 0;
+      let chunkUpdated = 0;
+
       for (const community of chunk) {
         try {
           const existingDocId = existingSlugs.get(community.slug);
@@ -124,7 +128,7 @@ export const communityService = {
               metadata: community.metadata || null,
               updatedAt: now
             });
-            result.updated++;
+            chunkUpdated++;
           } else {
             // Create new document using slug as document ID for easy lookup
             const docRef = doc(db, COLLECTION_NAME, community.slug);
@@ -135,7 +139,7 @@ export const communityService = {
               createdAt: community.createdAt || now,
               updatedAt: now
             });
-            result.imported++;
+            chunkImported++;
             // Track this new slug to avoid duplicates within the same import
             existingSlugs.set(community.slug, community.slug);
           }
@@ -149,6 +153,9 @@ export const communityService = {
 
       try {
         await batch.commit();
+        // Only add to result counts after successful commit
+        result.imported += chunkImported;
+        result.updated += chunkUpdated;
       } catch (error) {
         console.error(`Batch commit failed for chunk starting at index ${i}:`, error);
         // Mark all items in this batch as errors
@@ -158,9 +165,7 @@ export const communityService = {
             reason: 'Batch commit failed'
           });
         }
-        // Adjust counts
-        result.imported = Math.max(0, result.imported - chunk.length);
-        result.updated = Math.max(0, result.updated);
+        // Don't add chunk counts to result since batch failed
       }
     }
 
