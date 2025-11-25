@@ -134,16 +134,36 @@ export const handler: Handler = async (event) => {
         const fileEntry = formData.get('file');
         const providedName = formData.get('fileName');
 
-        if (!(fileEntry instanceof File)) {
+        const isFileLike =
+          typeof fileEntry === 'object' &&
+          fileEntry !== null &&
+          typeof (fileEntry as { arrayBuffer?: unknown }).arrayBuffer ===
+            'function';
+
+        if (!isFileLike) {
           return jsonResponse(400, { error: 'Missing file upload.' });
         }
 
+        const uploadBlob = fileEntry as {
+          arrayBuffer: () => Promise<ArrayBuffer>;
+          size?: number;
+          name?: string;
+        };
+
         const fileName =
           (typeof providedName === 'string' && providedName.trim()) ||
-          fileEntry.name ||
+          uploadBlob.name ||
           'dataset.csv';
 
-        if (fileEntry.size > MAX_UPLOAD_BYTES) {
+        let payload: ArrayBuffer;
+        try {
+          payload = await uploadBlob.arrayBuffer();
+        } catch (error) {
+          console.error('File buffer extraction failed', error);
+          return jsonResponse(400, { error: 'Invalid file upload.' });
+        }
+
+        if (payload.byteLength > MAX_UPLOAD_BYTES) {
           return jsonResponse(413, {
             error: `Payload exceeds ${Math.floor(
               MAX_UPLOAD_BYTES / (1024 * 1024)
@@ -154,7 +174,7 @@ export const handler: Handler = async (event) => {
         const objectKey = buildObjectKey(fileName);
 
         try {
-          await store.set(objectKey, fileEntry);
+          await store.set(objectKey, payload);
           return jsonResponse(200, {
             key: objectKey,
             uploadedAt: new Date().toISOString(),
