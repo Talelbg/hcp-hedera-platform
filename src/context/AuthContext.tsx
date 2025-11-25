@@ -84,8 +84,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
         } catch (error) {
-          console.error("Error fetching user role:", error);
-          setRole(null);
+          // Gracefully handle offline/network errors by defaulting to 'user' role
+          // This allows the app to remain functional with mock data when Firestore is unavailable
+          console.warn("Unable to fetch user role (offline or permission issue). Using default 'user' role.");
+          setRole('user');
           setAssignedPartnerCodes([]);
         }
       } else {

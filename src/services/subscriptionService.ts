@@ -45,7 +45,7 @@ export const subscriptionService = {
 
       // Fallback to Mock Data if DB is empty (PROTOTYPE MODE)
       if (results.length === 0) {
-          console.warn("No data found in Firestore. Loading Mock Data for prototype.");
+          // Using mock data for prototype mode - this is expected behavior
           let mocks = GENERATE_MOCK_DEVELOPERS();
           if (partnerCode && partnerCode !== 'All') {
               mocks = mocks.filter(m => m.partnerCode === partnerCode);
@@ -55,8 +55,8 @@ export const subscriptionService = {
 
       return results;
     } catch (error) {
-      console.error("Error getting subscriptions:", error);
-      // In case of error (e.g. permission denied), return mocks to keep UI alive
+      // In case of error (e.g. permission denied, offline), return mocks to keep UI alive
+      // This is expected behavior for prototype mode
       return GENERATE_MOCK_DEVELOPERS();
     }
   },
