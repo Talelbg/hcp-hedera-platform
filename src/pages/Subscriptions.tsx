@@ -36,15 +36,15 @@ const Subscriptions: React.FC = () => {
       try {
         let partnerCodeFilter = 'All';
 
-        if (role === 'admin') { // Community Leader
+        if (role === 'community' || role === 'regional') { // Community or Regional Admin
              // Fetch assigned codes from user profile
              const userDoc = await getDoc(doc(db, 'users', user.uid));
              if (userDoc.exists()) {
                  const userData = userDoc.data();
-                 // Assuming assignedCodes is an array, we pick the first one for now or handle multiple
+                 // Assuming assignedPartnerCodes is an array, we pick the first one for now or handle multiple
                  // For this prototype, let's assume one code or filtered by the first one.
                  // In a real app, we'd handle multiple codes logic in service.
-                 const codes = userData.assignedCodes || [];
+                 const codes = userData.assignedPartnerCodes || userData.assignedCodes || [];
                  if (codes.length > 0) {
                      partnerCodeFilter = codes[0];
                  }

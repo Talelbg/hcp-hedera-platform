@@ -5,6 +5,19 @@ export enum UserRole {
   COMMUNITY_ADMIN = 'Community Admin (Local)',
 }
 
+// Firebase Auth role for custom claims
+export type FirebaseUserRole = 'super_admin' | 'regional' | 'community' | 'user';
+
+// Users collection in Firestore
+export interface FirestoreUser {
+  uid: string;
+  email: string;
+  role: FirebaseUserRole;
+  assignedPartnerCodes: string[]; // For Regional (List) or Community (Single)
+  lastLogin: string;
+  createdAt: string;
+}
+
 export interface AdminUser {
   id: string;
   name: string;
@@ -60,11 +73,25 @@ export interface DeveloperRecord {
   finalScore: number;
   finalGrade: 'Pass' | 'Fail' | 'Pending';
   caStatus: string;
+  // Cloud Firestore indexed fields
+  status?: 'registered' | 'in_progress' | 'completed' | 'certified';
+  ingestionBatchId?: string;
+  riskScore?: number;
   // Computed / Enrichment fields
   durationHours?: number;
   isSuspicious?: boolean;
   suspicionReason?: string;
   dataError?: boolean;
+}
+
+// Batches collection - Track CSV upload history
+export interface DatasetBatch {
+  id: string;
+  fileName: string;
+  uploadDate: string;
+  uploadedBy: string; // User UID
+  recordCount: number;
+  versionId: string;
 }
 
 // New: Dataset Versioning
@@ -249,4 +276,40 @@ export interface ReportingContext {
     current: DashboardMetrics;
     prev: DashboardMetrics;
     global: DashboardMetrics;
+}
+
+// Firestore Campaign collection
+export interface Campaign {
+  id: string;
+  templateId: string;
+  targetAudienceFilter: {
+    partnerCode?: string;
+    status?: string;
+    percentageMin?: number;
+    percentageMax?: number;
+  };
+  sentAt: string;
+  status: 'Draft' | 'Sending' | 'Completed' | 'Failed';
+  recipientCount: number;
+}
+
+// Enhanced Events collection for Firestore
+export interface FirestoreEvent {
+  id: string;
+  title: string;
+  objective: string;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  format: 'Online' | 'In-Person';
+  meetingLink?: string;
+  location: string;
+  partnerCode: string;
+  facilitators: string[];
+  attendeesCount: number;
+  invitedCount: number;
+  rsvpedCount: number;
+  checkedInCount: number;
+  createdAt: string;
+  updatedAt: string;
 }

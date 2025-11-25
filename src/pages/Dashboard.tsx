@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
-import { Users, Award, Globe, Clock, AlertTriangle, Activity, Filter, BarChart2, Mail, Flag, Calendar, Check, Sparkles } from 'lucide-react';
+import { Users, Award, Globe, Clock, AlertTriangle, Activity, Filter, BarChart2, Flag, Calendar, Check, Sparkles } from 'lucide-react';
 import { StatCard } from '../components/dashboard/StatCard';
 import { DashboardMetrics, DeveloperRecord, calculateDashboardMetrics, generateChartData, generateLeaderboard } from '../services/dataProcessing';
 import { subscriptionService } from '../services/subscriptionService';
@@ -8,13 +8,16 @@ import { generateExecutiveSummary } from '../services/geminiService';
 import { useAuth } from '../context/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { DashboardErrorBoundary } from '../components/ErrorBoundary';
+import { DashboardSkeleton } from '../components/dashboard/SkeletonLoader';
 
 // Types adapted for internal state
 type TimeframeOption = 'All Time' | 'This Year' | 'Last 90 Days' | 'Last 30 Days' | 'Custom Range';
 
-const Dashboard: React.FC = () => {
+const DashboardContent: React.FC = () => {
   const { user, role } = useAuth();
   const [data, setData] = useState<DeveloperRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Metrics State
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -42,15 +45,16 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
      const fetchData = async () => {
          if (!user) return;
+         setIsLoading(true);
          try {
              let partnerCodeFilter = 'All';
 
-             if (role === 'admin') { // Community Leader
+             if (role === 'community' || role === 'regional') { // Community or Regional Admin
                  // Fetch assigned codes
                  const userDoc = await getDoc(doc(db, 'users', user.uid));
                  if (userDoc.exists()) {
                      const userData = userDoc.data();
-                     const codes = userData.assignedCodes || [];
+                     const codes = userData.assignedPartnerCodes || userData.assignedCodes || [];
                      if (codes.length > 0) {
                          partnerCodeFilter = codes[0];
                      }
@@ -67,6 +71,8 @@ const Dashboard: React.FC = () => {
              setData(records);
          } catch (error) {
              console.error("Failed to load dashboard data", error);
+         } finally {
+             setIsLoading(false);
          }
      };
      fetchData();
@@ -172,6 +178,11 @@ const Dashboard: React.FC = () => {
     }
     return null;
   };
+
+  // Show skeleton loader while loading
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   if (!metrics) return <div className="min-h-screen flex items-center justify-center bg-[#0e0c15] text-[#2a00ff] font-bold animate-pulse">Initializing Dashboard...</div>;
 
@@ -446,5 +457,11 @@ const Dashboard: React.FC = () => {
     </div>
   );
 };
+
+const Dashboard: React.FC = () => (
+  <DashboardErrorBoundary>
+    <DashboardContent />
+  </DashboardErrorBoundary>
+);
 
 export default Dashboard;
