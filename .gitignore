@@ -22,18 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Firebase
-.firebase
-*.cache
-functions/lib
-functions/node_modules
-
-# Environment files (keep .env.example)
-.env.local
-.env.*.local
-
-# Firebase debug
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
