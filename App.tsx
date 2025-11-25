@@ -55,7 +55,7 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
 
-    // Load Data
+    // Load Synchronous Data (LocalStorage)
     setAdmins(LocalDB.getAdmins());
     setInvoices(LocalDB.getInvoices());
     setAgreements(LocalDB.getAgreements());
@@ -63,11 +63,20 @@ function App() {
     setCampaigns(LocalDB.getCampaigns());
     setMasterRegistry(LocalDB.getMasterRegistry());
     
-    const savedVersions = LocalDB.getDatasetVersions();
-    setVersions(savedVersions);
-    if (savedVersions.length > 0) {
-        setActiveVersionId(savedVersions[0].id);
-    }
+    // Load Asynchronous Data (IndexedDB)
+    const loadDatasets = async () => {
+        try {
+            const savedVersions = await LocalDB.getDatasetVersions();
+            setVersions(savedVersions);
+            if (savedVersions.length > 0) {
+                setActiveVersionId(savedVersions[0].id);
+            }
+        } catch (e) {
+            console.error("Failed to load datasets from DB", e);
+        }
+    };
+    loadDatasets();
+
   }, []);
 
   // --- PERSISTENCE EFFECTS ---
@@ -109,18 +118,26 @@ function App() {
       setAdmins(admins.map(a => a.id === updatedUser.id ? updatedUser : a));
   };
 
-  const handleDataLoaded = (newVersion: DatasetVersion) => {
+  const handleDataLoaded = (newData: DeveloperRecord[], fileName: string) => {
+    // Update State
+    const newVersion: DatasetVersion = { 
+        id: `ver_${Date.now()}`, 
+        fileName, 
+        uploadDate: new Date().toISOString(), 
+        recordCount: newData.length, 
+        data: newData 
+    };
     setVersions(prev => [newVersion, ...prev]);
     setActiveVersionId(newVersion.id);
   };
 
   const handleSwitchVersion = (id: string) => setActiveVersionId(id);
   
-  const handleDeleteVersion = (version: DatasetVersion) => {
-      LocalDB.deleteDatasetVersion(version.id); // Delete from DB
-      const newVersions = versions.filter(v => v.id !== version.id);
+  const handleDeleteVersion = async (id: string) => {
+      await LocalDB.deleteDatasetVersion(id); // Delete from IndexedDB
+      const newVersions = versions.filter(v => v.id !== id);
       setVersions(newVersions);
-      if (activeVersionId === version.id) setActiveVersionId(newVersions.length > 0 ? newVersions[0].id : null);
+      if (activeVersionId === id) setActiveVersionId(newVersions.length > 0 ? newVersions[0].id : null);
   };
 
   const handleNavigate = (view: string, params?: any) => { setViewParams(params || null); setCurrentView(view); };

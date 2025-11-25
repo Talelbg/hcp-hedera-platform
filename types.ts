@@ -56,8 +56,6 @@ export interface DatasetVersion {
     uploadDate: string;
     recordCount: number;
     data: DeveloperRecord[];
-    cloudKey?: string;
-    cloudUploadedAt?: string;
 }
 
 // 3.2 Module B: Invoicing & Agreements

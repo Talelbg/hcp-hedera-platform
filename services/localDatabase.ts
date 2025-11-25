@@ -1,6 +1,5 @@
 
 import { 
-    DeveloperRecord, 
     DatasetVersion, 
     Invoice, 
     CommunityAgreement, 
@@ -11,10 +10,8 @@ import {
 } from '../types';
 import { MOCK_ADMIN_TEAM } from '../constants';
 
-// KEYS FOR LOCAL STORAGE
+// KEYS FOR LOCAL STORAGE (Small Data Entities)
 const KEYS = {
-    VERSIONS: 'hcp_versions',
-    CURRENT_VERSION: 'hcp_active_version_id',
     INVOICES: 'hcp_invoices',
     AGREEMENTS: 'hcp_agreements',
     EVENTS: 'hcp_events',
@@ -23,50 +20,112 @@ const KEYS = {
     REGISTRY: 'hcp_registry'
 };
 
+// INDEXED DB CONFIG (Large Data Entities)
+const DB_NAME = 'HCP_DB';
+const DB_VERSION = 1;
+const STORE_DATASETS = 'datasets';
+
 class LocalDatabaseService {
     
-    // --- DATASET VERSIONING ---
-    saveDatasetVersion(version: DatasetVersion): void {
-        try {
-            const current = this.getDatasetVersions();
-            const updated = [version, ...current];
-            // Limit to last 5 versions to prevent LocalStorage quota exceeded
-            if (updated.length > 5) updated.pop(); 
+    private dbPromise: Promise<IDBDatabase>;
+
+    constructor() {
+        // Initialize IndexedDB
+        this.dbPromise = new Promise((resolve, reject) => {
+            if (typeof window === 'undefined' || !window.indexedDB) {
+                // Fallback for environments without IndexedDB
+                return;
+            }
+            const request = window.indexedDB.open(DB_NAME, DB_VERSION);
             
-            localStorage.setItem(KEYS.VERSIONS, JSON.stringify(updated));
+            request.onerror = () => {
+                console.error("IndexedDB failed to open:", request.error);
+                reject(request.error);
+            };
+            
+            request.onsuccess = () => {
+                resolve(request.result);
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = (event.target as IDBOpenDBRequest).result;
+                if (!db.objectStoreNames.contains(STORE_DATASETS)) {
+                    // Create object store for datasets with 'id' as key
+                    db.createObjectStore(STORE_DATASETS, { keyPath: 'id' });
+                }
+            };
+        });
+    }
+
+    // --- DATASET VERSIONING (IndexedDB) ---
+    
+    async saveDatasetVersion(version: DatasetVersion): Promise<void> {
+        try {
+            const db = await this.dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_DATASETS], 'readwrite');
+                const store = transaction.objectStore(STORE_DATASETS);
+                const request = store.put(version); // put() adds or updates
+                
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
         } catch (e) {
-            console.error("LocalDB: Failed to save dataset version", e);
-            alert("Storage Quota Exceeded. Older versions were removed.");
+            console.error("LocalDB: Failed to save dataset version to IndexedDB", e);
+            throw e;
         }
     }
 
-    getDatasetVersions(): DatasetVersion[] {
+    async getDatasetVersions(): Promise<DatasetVersion[]> {
         try {
-            const data = localStorage.getItem(KEYS.VERSIONS);
-            return data ? JSON.parse(data) : [];
+            const db = await this.dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_DATASETS], 'readonly');
+                const store = transaction.objectStore(STORE_DATASETS);
+                const request = store.getAll();
+                
+                request.onsuccess = () => {
+                    const res = request.result as DatasetVersion[];
+                    // Sort by uploadDate descending (newest first)
+                    res.sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+                    resolve(res);
+                };
+                request.onerror = () => reject(request.error);
+            });
         } catch (e) {
+            console.error("LocalDB: Failed to load datasets from IndexedDB", e);
             return [];
         }
     }
 
-    deleteDatasetVersion(id: string): void {
-        const current = this.getDatasetVersions();
-        const updated = current.filter(v => v.id !== id);
-        localStorage.setItem(KEYS.VERSIONS, JSON.stringify(updated));
+    async deleteDatasetVersion(id: string): Promise<void> {
+        try {
+            const db = await this.dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_DATASETS], 'readwrite');
+                const store = transaction.objectStore(STORE_DATASETS);
+                const request = store.delete(id);
+                
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        } catch (e) {
+            console.error("LocalDB: Failed to delete dataset", e);
+            throw e;
+        }
     }
 
-    // --- APP STATE PERSISTENCE ---
+    // --- APP STATE PERSISTENCE (LocalStorage) ---
+    // Used for smaller configuration objects
     
-    // GENERIC SAVER
     private saveItem<T>(key: string, data: T): void {
         try {
             localStorage.setItem(key, JSON.stringify(data));
         } catch (e) {
-            console.error(`LocalDB: Error saving ${key}`, e);
+            console.error(`LocalDB: Error saving ${key} to localStorage`, e);
         }
     }
 
-    // GENERIC LOADER
     private loadItem<T>(key: string, fallback: T): T {
         try {
             const item = localStorage.getItem(key);

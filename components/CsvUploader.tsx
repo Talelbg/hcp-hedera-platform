@@ -1,17 +1,16 @@
 
 import React, { useRef, useState } from 'react';
-import { Upload, FileSpreadsheet, CheckCircle, Loader2, AlertTriangle, History, Trash2, Database, Save, CloudUpload, CloudOff } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, Loader2, AlertTriangle, History, Trash2, Database, Save } from 'lucide-react';
 import { DeveloperRecord, DatasetVersion } from '../types';
 import { processIngestedData } from '../services/dataProcessing';
 import { LocalDB } from '../services/localDatabase';
-import { uploadDatasetToCloud, deleteDatasetFromCloud } from '../services/cloudDatasets';
 
 interface CsvUploaderProps {
-  onDataLoaded: (version: DatasetVersion) => void;
+  onDataLoaded: (data: DeveloperRecord[], fileName: string) => void;
   versions?: DatasetVersion[];
   activeVersionId?: string;
   onVersionSelect?: (id: string) => void;
-  onDeleteVersion?: (version: DatasetVersion) => void;
+  onDeleteVersion?: (id: string) => void;
 }
 
 export const CsvUploader: React.FC<CsvUploaderProps> = ({ 
@@ -24,25 +23,32 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
   const [loadedCount, setLoadedCount] = useState<number>(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [cloudError, setCloudError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [lastUploadedVersion, setLastUploadedVersion] = useState<DatasetVersion | null>(null);
-  const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // Allow larger datasets within updated Netlify Function payload limits
 
-  // --- LOCAL DB SYNC LOGIC ---
-  const saveToLocalDb = (version: DatasetVersion) => {
-      setIsSaving(true);
+  // --- LOCAL DB SYNC LOGIC (ASYNC) ---
+  const saveToLocalDb = async (fName: string, data: DeveloperRecord[]) => {
       try {
-          LocalDB.saveDatasetVersion(version);
+          setIsSaving(true);
+          
+          const newVersion: DatasetVersion = {
+              id: `ver_${Date.now()}`,
+              fileName: fName,
+              uploadDate: new Date().toISOString(),
+              recordCount: data.length,
+              data: data
+          };
+
+          // Use IndexedDB via LocalDB wrapper (async)
+          await LocalDB.saveDatasetVersion(newVersion);
+          
+          setIsSaving(false);
       } catch (error) {
           console.error("Local Save Failed:", error);
-      } finally {
+          setErrorMsg("Data processed but failed to save to local history (IndexedDB).");
           setIsSaving(false);
       }
   };
@@ -243,20 +249,6 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
     if (!file) return;
 
     const fName = file.name;
-
-    if (file.size > MAX_UPLOAD_BYTES) {
-        const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
-        const limitMb = (MAX_UPLOAD_BYTES / (1024 * 1024)).toFixed(0);
-        const message = `The selected CSV is ${sizeMb} MB, which exceeds the ${limitMb} MB upload allowance for this ingest flow due to Netlify Function request limits. Please reduce the file size before uploading.`;
-        setFileName(null);
-        setIsProcessing(false);
-        setStatusMessage('');
-        setLoadedCount(0);
-        setErrorMsg(message);
-        setCloudError(message);
-        return;
-    }
-
     setFileName(fName);
     setIsProcessing(true);
     setIsSaving(false);
@@ -264,8 +256,6 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
     setLoadedCount(0);
     setErrorMsg(null);
     setStatusMessage('Reading file...');
-    setCloudError(null);
-    setLastUploadedVersion(null);
 
     const reader = new FileReader();
     
@@ -278,90 +268,39 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
         }
 
         setStatusMessage('Parsing CSV structure...');
-        setCloudError(null);
-
-        let stage: 'parse' | 'process' | 'upload' | 'save' = 'parse';
-
+        
         try {
             const rawData = await parseCSV(text, (pct) => setProgress(pct));
-            stage = 'process';
-
+            
             setStatusMessage('Running Logic (Fraud Detection & Time Fixes)...');
-            const processed = processIngestedData(rawData);
-            setLoadedCount(processed.length);
+            
+            setTimeout(async () => {
+                const processed = processIngestedData(rawData);
+                setLoadedCount(processed.length);
+                
+                // 1. Pass data to parent (App) to render immediately
+                onDataLoaded(processed, fName); 
+                
+                // 2. Persist to LocalDB (Async IndexedDB)
+                await saveToLocalDb(fName, processed);
 
-            stage = 'upload';
-            setStatusMessage('Uploading dataset to secure storage...');
-            setIsUploading(true);
-            const uploadResult = await uploadDatasetToCloud(file, { fallbackText: text });
+                setIsProcessing(false);
+                setStatusMessage('Complete');
+            }, 50);
 
-            stage = 'save';
-            setIsUploading(false);
-            const datasetVersion: DatasetVersion = {
-                id: `ver_${Date.now()}`,
-                fileName: fName,
-                uploadDate: new Date().toISOString(),
-                recordCount: processed.length,
-                data: processed,
-                cloudKey: uploadResult.key,
-                cloudUploadedAt: uploadResult.uploadedAt
-            };
-
-            setStatusMessage('Saving version locally...');
-            saveToLocalDb(datasetVersion);
-            onDataLoaded(datasetVersion);
-            setLastUploadedVersion(datasetVersion);
-
-            setStatusMessage('Complete');
-            setErrorMsg(null);
         } catch (err: any) {
             console.error(err);
-            const message = err?.message || "Unexpected processing error.";
-            setErrorMsg(message);
-            if (stage === 'upload') {
-                setCloudError(message);
-            }
-            setLastUploadedVersion(null);
-        } finally {
+            setErrorMsg(err.message || "Unknown parsing error");
             setIsProcessing(false);
-            setIsUploading(false);
         }
     };
 
     reader.onerror = () => {
         setErrorMsg('Error reading file from disk.');
-        setCloudError('Error reading file from disk.');
         setIsProcessing(false);
-        setIsUploading(false);
     };
 
     reader.readAsText(file);
-  };
-
-  const handleDeleteVersionRequest = async (version: DatasetVersion) => {
-      if (!onDeleteVersion || deletingId) return;
-
-      setDeletingId(version.id);
-      setErrorMsg(null);
-      setCloudError(null);
-      setStatusMessage('Removing dataset version...');
-
-      try {
-          if (version.cloudKey) {
-              await deleteDatasetFromCloud(version.cloudKey);
-          }
-          onDeleteVersion(version);
-      } catch (err: any) {
-          console.error(err);
-          const message = err?.message || 'Failed to delete dataset version.';
-          setErrorMsg(message);
-          if (version.cloudKey) {
-              setCloudError(message);
-          }
-      } finally {
-          setDeletingId(null);
-          setStatusMessage('');
-      }
   };
 
   const triggerUpload = () => {
@@ -388,7 +327,7 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
                 ) : isProcessing ? (
                     statusMessage
                 ) : (
-                    "Upload the Master CSV (keep under ~25MB per Netlify Function limits). Auto-detects 'Email' & 'Code', fixes timestamps, flags fraud, and saves to Local DB."
+                    "Upload the Master CSV (Max 100MB). Auto-detects 'Email' & 'Code', fixes timestamps, flags fraud, and saves to IndexedDB."
                 )}
             </p>
             </div>
@@ -421,7 +360,7 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
             )}
 
             {fileName && !isProcessing && !errorMsg && (
-                <div className="mt-2 flex flex-col items-center gap-3 animate-fade-in">
+                <div className="mt-2 flex flex-col items-center gap-2 animate-fade-in">
                     <div className="flex items-center gap-2 text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 px-4 py-2 rounded-lg text-sm font-medium border border-green-100 dark:border-green-800">
                         <CheckCircle className="w-4 h-4" />
                         {loadedCount.toLocaleString()} records loaded successfully.
@@ -429,23 +368,11 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
                     
                     {isSaving ? (
                          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-xs font-bold animate-pulse">
-                             <Save className="w-3 h-3" /> Saving to Local Database...
+                             <Save className="w-3 h-3" /> Saving to IndexedDB...
                          </div>
                     ) : (
-                         <div className="flex flex-col sm:flex-row items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-300">
-                             <span className="flex items-center gap-2">
-                                 <Database className="w-3 h-3" /> Cached to Browser Storage
-                             </span>
-                             <span className="hidden sm:block text-slate-300 dark:text-slate-600">•</span>
-                             {lastUploadedVersion?.cloudKey ? (
-                                 <span className="flex items-center gap-2 text-green-600 dark:text-green-300">
-                                     <CloudUpload className="w-3 h-3" /> Synced to Cloud
-                                 </span>
-                             ) : (
-                                 <span className="flex items-center gap-2 text-slate-400">
-                                     <CloudOff className="w-3 h-3" /> Cloud sync unavailable
-                                 </span>
-                             )}
+                         <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
+                             <Database className="w-3 h-3" /> Saved to Browser Storage (IndexedDB)
                          </div>
                     )}
                 </div>
@@ -473,7 +400,6 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
                              <th className="px-6 py-3">File Name</th>
                              <th className="px-6 py-3">Upload Date</th>
                              <th className="px-6 py-3">Records</th>
-                             <th className="px-6 py-3">Cloud Sync</th>
                              <th className="px-6 py-3 text-right">Actions</th>
                          </tr>
                      </thead>
@@ -486,37 +412,21 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
                                  </td>
                                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{new Date(v.uploadDate).toLocaleString()}</td>
                                  <td className="px-6 py-4 font-mono text-slate-600 dark:text-slate-300">{v.recordCount.toLocaleString()}</td>
-                                 <td className="px-6 py-4">
-                                     {v.cloudKey ? (
-                                         <span 
-                                            className="inline-flex items-center gap-2 text-green-600 dark:text-green-300 text-xs font-semibold"
-                                            title={v.cloudUploadedAt ? `Uploaded ${new Date(v.cloudUploadedAt).toLocaleString()}` : 'Uploaded to cloud'}
-                                         >
-                                             <CloudUpload className="w-4 h-4" /> Synced
-                                         </span>
-                                     ) : (
-                                         <span className="inline-flex items-center gap-2 text-slate-400 text-xs font-semibold">
-                                             <CloudOff className="w-4 h-4" /> Local only
-                                         </span>
-                                     )}
-                                 </td>
                                  <td className="px-6 py-4 text-right flex items-center justify-end gap-3">
                                      {v.id !== activeVersionId && onVersionSelect && (
                                          <button 
                                             onClick={() => onVersionSelect(v.id)}
-                                            disabled={deletingId === v.id}
-                                            className="text-[#2a00ff] hover:text-blue-500 font-bold text-xs flex items-center gap-1 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-900 px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="text-[#2a00ff] hover:text-blue-500 font-bold text-xs flex items-center gap-1 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-900 px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                                          >
                                              <Database className="w-3 h-3" /> Switch
                                          </button>
                                      )}
                                      {onDeleteVersion && (
                                          <button 
-                                            onClick={() => handleDeleteVersionRequest(v)}
-                                            disabled={deletingId === v.id}
-                                            className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onClick={() => onDeleteVersion(v.id)}
+                                            className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                          >
-                                             {deletingId === v.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                             <Trash2 className="w-4 h-4" />
                                          </button>
                                      )}
                                  </td>
