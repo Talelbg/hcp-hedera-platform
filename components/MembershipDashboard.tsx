@@ -249,4 +249,81 @@ export const MembershipDashboard: React.FC<MembershipDashboardProps> = ({ data, 
             {/* Funnel / Pie Chart */}
             <div className="glass-card p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <h3 className="font-bold text-slate-800 dark:text-white mb-2">Program Composition</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Ratio of Total Enrolled vs. Accepted Members</p
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Ratio of Total Enrolled vs. Accepted Members</p>
+                {metrics.totalEnrolled === 0 ? (
+                    <div className="h-48 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
+                        No membership data found for the selected filters.
+                    </div>
+                ) : (
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        <div className="w-full lg:w-1/2 h-72">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={funnelData}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={90}
+                                        paddingAngle={6}
+                                    >
+                                        {funnelData.map((entry, index) => (
+                                            <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        formatter={(value: number, name: string) => [`${value.toLocaleString()}`, name]}
+                                        contentStyle={{
+                                            borderRadius: 12,
+                                            border: '1px solid rgba(148, 163, 184, 0.2)',
+                                            backgroundColor: '#0f172a',
+                                            color: '#e2e8f0'
+                                        }}
+                                    />
+                                    <Legend verticalAlign="bottom" height={36} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Conversion Rate</div>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-2xl font-bold text-slate-900 dark:text-white">{metrics.membershipRate.toFixed(1)}%</span>
+                                    <TrendingUp className={`w-4 h-4 ${metrics.membershipRate >= 50 ? 'text-emerald-400' : 'text-amber-400'}`} />
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Percentage of enrolled developers who accepted membership agreements.</p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Certified Members</div>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-2xl font-bold text-slate-900 dark:text-white">{metrics.certifiedMembers.toLocaleString()}</span>
+                                    <UserCheck className="w-4 h-4 text-sky-400" />
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">{metrics.certifiedMemberRate.toFixed(1)}% of members have completed certification.</p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Active Communities</div>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-2xl font-bold text-slate-900 dark:text-white">{metrics.activeCommunities}</span>
+                                    <Award className="w-4 h-4 text-[#8b5cf6]" />
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Communities contributing member conversions this period.</p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+                                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Members Remaining</div>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-2xl font-bold text-slate-900 dark:text-white">{(metrics.totalEnrolled - metrics.totalMembers).toLocaleString()}</span>
+                                    <Users className="w-4 h-4 text-amber-400" />
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Developers yet to convert to members. Ideal for outreach campaigns.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    </div>
+  );
+};

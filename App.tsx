@@ -109,27 +109,18 @@ function App() {
       setAdmins(admins.map(a => a.id === updatedUser.id ? updatedUser : a));
   };
 
-  const handleDataLoaded = (newData: DeveloperRecord[], fileName: string) => {
-    // Update State (LocalDB Save is handled inside CsvUploader)
-    // We reload versions from DB to ensure sync, or construct object
-    const newVersion: DatasetVersion = { 
-        id: `ver_${Date.now()}`, 
-        fileName, 
-        uploadDate: new Date().toISOString(), 
-        recordCount: newData.length, 
-        data: newData 
-    };
+  const handleDataLoaded = (newVersion: DatasetVersion) => {
     setVersions(prev => [newVersion, ...prev]);
     setActiveVersionId(newVersion.id);
   };
 
   const handleSwitchVersion = (id: string) => setActiveVersionId(id);
   
-  const handleDeleteVersion = (id: string) => {
-      LocalDB.deleteDatasetVersion(id); // Delete from DB
-      const newVersions = versions.filter(v => v.id !== id);
+  const handleDeleteVersion = (version: DatasetVersion) => {
+      LocalDB.deleteDatasetVersion(version.id); // Delete from DB
+      const newVersions = versions.filter(v => v.id !== version.id);
       setVersions(newVersions);
-      if (activeVersionId === id) setActiveVersionId(newVersions.length > 0 ? newVersions[0].id : null);
+      if (activeVersionId === version.id) setActiveVersionId(newVersions.length > 0 ? newVersions[0].id : null);
   };
 
   const handleNavigate = (view: string, params?: any) => { setViewParams(params || null); setCurrentView(view); };
